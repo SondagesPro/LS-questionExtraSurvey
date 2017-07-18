@@ -109,7 +109,7 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
   {
     $iSurveyId=$this->event->get('surveyId');
     if(Yii::app()->getRequest()->getQuery('srid') and Yii::app()->getRequest()->getParam('extrasurveyqid')) {
-      $title=Survey::model()->findByPk($iSurveyId)->getLocalizedTitle();
+      $title=Survey::model()->findByPk($iSurveyId)->getLocalizedTitle(); // @todo : get default lang title
       /* search if it's a related survey */
       $oAttributeExtraSurvey=QuestionAttribute::model()->find('attribute=:attribute AND (value=:sid OR value=:title)  AND qid=:qid',array(
         ':attribute' => 'extraSurvey',
@@ -125,12 +125,11 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
             $oToken->token=$token;
             $oToken->save();
         }
+        unset($_SESSION['survey_'.$iSurveyId]);
+        LimeExpressionManager::SetDirtyFlag();
+        $this->qid = Yii::app()->getRequest()->getParam('extrasurveyqid');
+        $this->token = $oToken->token;
       }
-      unset($_SESSION['survey_'.$iSurveyId]);
-      LimeExpressionManager::SetDirtyFlag();
-
-      $this->qid = Yii::app()->getRequest()->getParam('extrasurveyqid');
-      $this->token = $oToken->token;
     }
   }
 
