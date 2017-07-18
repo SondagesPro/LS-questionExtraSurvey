@@ -1,0 +1,26 @@
+/*!
+ * Style
+ *
+ * Copyright 2015 Denis Chenu <http://www.sondages.pro>
+ * Licensed under the Apache License v2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ */
+
+.modal iframe{width:100%;border:0;min-height:300px}
+@media (min-width: 992px) {
+  #modal-questionExtraSurvey .modal-lg {
+    min-width: 90%;
+  }
+}
+@media (max-width: 992px) {
+  #modal-questionExtraSurvey .modal-lg {
+    min-width: 99%;
+  }
+}
+#modal-questionExtraSurvey .modal-body{
+  padding:0;
+}
+#modal-questionExtraSurvey .modal-lg {
+  margin: 0 auto;
+}
