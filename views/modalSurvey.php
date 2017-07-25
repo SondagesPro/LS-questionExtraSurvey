@@ -9,9 +9,10 @@
       <div class="modal-body">
         <iframe name="frame-questionExtraSurvey" class="extra-survey"></iframe></div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close without saving</button>
-        <button type="button" class="btn btn-primary btn-survey" data-action="saveall">Save as draft</button>
-        <button type="button" class="btn btn-success btn-survey" data-action="movesubmit">Save as complete</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close without saving</button>
+          <button type="button" class="btn btn-danger btn-survey" data-clearall="clearall">Delete</button>
+          <button type="button" class="btn btn-info btn-survey hidden" data-action="movenext">Next</button>
+          <button type="button" class="btn btn-success btn-survey" data-action="movesubmit">Save</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->

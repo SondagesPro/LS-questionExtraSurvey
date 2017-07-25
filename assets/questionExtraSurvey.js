@@ -35,7 +35,10 @@ $(document).on("click","#modal-questionExtraSurvey button[data-action]",function
   event.preventDefault();
   $("#modal-questionExtraSurvey iframe").contents().find("button[name='"+$(this).data('action')+"']").click();
 });
-
+$(document).on("click","#modal-questionExtraSurvey button[data-clearall]",function(event) {
+  event.preventDefault();
+  $("#modal-questionExtraSurvey iframe").contents().find("button[name='"+$(this).data('action')+"']").click();
+});
 function updateList(element) {
   if($(element).data('update-questionextrasurvey')) {
     $.ajax({
@@ -72,3 +75,21 @@ function updateHeightModalbody(modal) {
 function surveySubmitted() {
   $('#modal-questionExtraSurvey').modal('hide');
 }
+function surveyLoaded() {
+  if($("#modal-questionExtraSurvey iframe").contents().find("button[name='movenext']")) {
+    $('#modal-questionExtraSurvey .btn-info').removeClass("hidden");
+    $('#modal-questionExtraSurvey .btn-success').addClass("hidden");
+  } else {
+    $('#modal-questionExtraSurvey .btn-success').removeClass("hidden");
+    $('#modal-questionExtraSurvey .btn-info').addClass("hidden");
+  }
+}
+$(document).on('click','[data-clearall]',function(event) {
+    $("#modal-confirm-clearall").modal('show');
+    $("#modal-confirm-clearall .btn-confirm").on('click',function(){
+      $("#modal-questionExtraSurvey iframe").contents().find("input[name='confirm-clearall']").prop("checked",true);
+      $("#modal-questionExtraSurvey iframe").contents().find("#limesurvey").append("<input type='hidden' name='extraSurvey' value='1'>");
+      $("#modal-questionExtraSurvey iframe").contents().find("button[name='clearall']").removeAttr('data-confirmedby').click();
+    });
+  
+});

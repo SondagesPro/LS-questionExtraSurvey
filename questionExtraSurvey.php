@@ -108,6 +108,26 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
   public function beforeSurveyPage()
   {
     $iSurveyId=$this->event->get('surveyId');
+    $aSessionExtraSurvey=Yii::app()->session["questionExtraSurvey"];
+    if(empty($aSessionExtraSurvey)) {
+        $aSessionExtraSurvey=array();
+    }
+    if((Yii::app()->getRequest()->getParam('move')=='clearall' || Yii::app()->getRequest()->getParam('clearall')) && Yii::app()->getRequest()->getParam('extraSurvey')) {
+      if(isset($aSessionExtraSurvey[$iSurveyId]) && isset($_SESSION['survey_'.$iSurveyId]['srid'])) {
+        $oResponse=Response::model($iSurveyId)->find("id = :srid",array(":srid"=>$_SESSION['survey_'.$iSurveyId]['srid']));
+        if($oResponse) {
+          $oResponse->delete();
+        }
+        unset($aSessionExtraSurvey[$iSurveyId]);
+        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+        $renderMessage = new \renderMessage\messageHelper();
+        $script = "if(window.location != window.parent.location && jQuery.isFunction(window.parent.surveySubmitted)) {\n";
+        $script.= "  window.parent.surveySubmitted();\n";
+        $script.= "}\n";
+        Yii::app()->getClientScript()->registerScript("questionExtraSurveyComplete",$script,CClientScript::POS_LOAD);
+        $renderMessage->render("Instrument deleted, you can close this window.");
+      }
+    }
     if(Yii::app()->getRequest()->getQuery('srid') and Yii::app()->getRequest()->getParam('extrasurveyqid')) {
       $title=Survey::model()->findByPk($iSurveyId)->getLocalizedTitle(); // @todo : get default lang title
       /* search if it's a related survey */
@@ -129,7 +149,12 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
         LimeExpressionManager::SetDirtyFlag();
         $this->qid = Yii::app()->getRequest()->getParam('extrasurveyqid');
         $this->token = $oToken->token;
+        $aSessionExtraSurvey[$iSurveyId]=$oAttributeExtraSurvey->qid;
+        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
       }
+    }
+    if(isset($aSessionExtraSurvey[$iSurveyId])) {
+        $this->_manageExtraSurvey();
     }
   }
 
@@ -137,10 +162,16 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
    *Ad script after survey complete
    */
   public function afterSurveyComplete() {
-    $script = "if(window.location != window.parent.location && jQuery.isFunction(window.parent.surveySubmitted)) {\n";
-    $script.= "  window.parent.surveySubmitted();\n";
-    $script.= "}\n";
-    Yii::app()->getClientScript()->registerScript("questionExtraSurveyComplete",$script,CClientScript::POS_LOAD);
+    $iSurveyId=$this->event->get('surveyId');
+    $aSessionExtraSurvey=Yii::app()->session["questionExtraSurvey"];
+    if(isset($aSessionExtraSurvey[$iSurveyId])) {
+      unset($aSessionExtraSurvey[$iSurveyId]);
+      Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+      $script = "if(window.location != window.parent.location && jQuery.isFunction(window.parent.surveySubmitted)) {\n";
+      $script.= "  window.parent.surveySubmitted();\n";
+      $script.= "}\n";
+      Yii::app()->getClientScript()->registerScript("questionExtraSurveyComplete",$script,CClientScript::POS_END);
+    }
   }
   /**
    * Recall good survey
@@ -179,7 +210,7 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
       if(!ctype_digit($extraSurveyAttribute)) {
           $oLangSurvey=SurveyLanguageSetting::model()->find(array(
               'select'=>'surveyls_survey_id',
-              'condition'=>'surveyls_title = :title AND surveyls_language =:language',
+              'condition'=>'surveyls_title = :title AND surveyls_language =:language ',
               'params'=>array(
                   ':title' => $extraSurveyAttribute,
                   ':language' => Yii::app()->getLanguage(),
@@ -276,10 +307,10 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
     ));
     $listOfReponses="<div data-update-questionExtraSurvey='$ajaxUrl'>{$listOfReponses}</div>";
     $oEvent->set("answers",$answer.$listOfReponses);
-
+    $modalConfirm=Yii::app()->controller->renderPartial('questionExtraSurvey.views.modalConfirm',array(),1);
+    Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalConfirm","$('body').prepend(".json_encode($modalConfirm).");",CClientScript::POS_READY);
     $modalSurvey=Yii::app()->controller->renderPartial('questionExtraSurvey.views.modalSurvey',array(),1);
     Yii::app()->getClientScript()->registerScript("questionExtraSurvey","$('body').prepend(".json_encode($modalSurvey).");",CClientScript::POS_READY);
-
   }
 
   /**
@@ -395,6 +426,18 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
     return $aResponses;
   }
 
+  /**
+   * Management of extra survey (before shown)
+   */
+  private function _manageExtraSurvey()
+  {
+    $script = "if(window.location != window.parent.location && jQuery.isFunction(window.parent.surveyLoaded)) {\n";
+    $script.= "  window.parent.surveyLoaded();\n";
+    $script.= "}\n";
+    Yii::app()->getClientScript()->registerScript("questionExtraSurveyPage",$script,CClientScript::POS_READY);
+    //~ $jsUrl = Yii::app()->assetManager->publish(dirname(__FILE__) . '/assets/extraSurvey.js');
+    //~ App()->getClientScript()->registerScriptFile($jsUrl,CClientScript::POS_READY);
+}
   /**
    * Get Response, contol access
    * @param integer survey id
