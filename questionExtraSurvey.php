@@ -128,7 +128,7 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
         $renderMessage->render("Instrument deleted, you can close this window.");
       }
     }
-    if(Yii::app()->getRequest()->getQuery('srid') and Yii::app()->getRequest()->getParam('extrasurveyqid')) {
+    if(Yii::app()->getRequest()->getQuery('srid') && Yii::app()->getRequest()->getParam('extrasurveyqid')) {
       $title=Survey::model()->findByPk($iSurveyId)->getLocalizedTitle(); // @todo : get default lang title
       /* search if it's a related survey */
       $oAttributeExtraSurvey=QuestionAttribute::model()->find('attribute=:attribute AND (value=:sid OR value=:title)  AND qid=:qid',array(
@@ -187,6 +187,8 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
     }
     if(Yii::app()->getRequest()->getParam('srid')) {
       $oResponse=$this->_getResponse($this->getEvent()->get('surveyId'),Yii::app()->getRequest()->getParam('srid'));
+      $oResponse->submitdate=null;
+      $oResponse->save();
       $this->getEvent()->set('response',$oResponse);
       return;
     }
@@ -435,11 +437,13 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
     $script.= "  window.parent.surveyLoaded();\n";
     $script.= "}\n";
     Yii::app()->getClientScript()->registerScript("questionExtraSurveyPage",$script,CClientScript::POS_READY);
+    // Add as option in qid ?
+    
     //~ $jsUrl = Yii::app()->assetManager->publish(dirname(__FILE__) . '/assets/extraSurvey.js');
     //~ App()->getClientScript()->registerScriptFile($jsUrl,CClientScript::POS_READY);
 }
   /**
-   * Get Response, contol access
+   * Get Response, control access
    * @param integer survey id
    * @param integer response id
    * @return void|Response
