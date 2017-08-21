@@ -76,7 +76,7 @@ function surveySubmitted() {
   $('#modal-questionExtraSurvey').modal('hide');
 }
 function surveyLoaded() {
-  if($("#modal-questionExtraSurvey iframe").contents().find("button[name='movenext']")) {
+  if($("#modal-questionExtraSurvey iframe").contents().find("button[name='movenext']").length) {
     $('#modal-questionExtraSurvey .btn-info').removeClass("hidden");
     $('#modal-questionExtraSurvey .btn-success').addClass("hidden");
   } else {
