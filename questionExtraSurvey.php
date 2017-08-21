@@ -187,9 +187,11 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
     }
     if(Yii::app()->getRequest()->getParam('srid')) {
       $oResponse=$this->_getResponse($this->getEvent()->get('surveyId'),Yii::app()->getRequest()->getParam('srid'));
-      $oResponse->submitdate=null;
-      $oResponse->lastpage=0;
-      $oResponse->save();
+      if($oResponse->submitdate) {
+        $oResponse->submitdate=null;
+        $oResponse->lastpage=0;
+        $oResponse->save();
+      }
       $this->getEvent()->set('response',$oResponse);
       return;
     }
