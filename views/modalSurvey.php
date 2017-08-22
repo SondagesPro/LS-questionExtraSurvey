@@ -1,9 +1,9 @@
 <!-- Bootstrap Modal Survey -->
-<div id="modal-questionExtraSurvey" class="modal"  tabindex="-1" role="dialog">
+<div id="modal-questionExtraSurvey" class="modal"  tabindex="-1" role="dialog" data-backdrop="static" data-keyboard=0>
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <!-- <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button> -->
         <div class="h4 modal-title"></div>
       </div>
       <div class="modal-body">
