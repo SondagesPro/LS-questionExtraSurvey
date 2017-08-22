@@ -91,6 +91,15 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
         'help'=>gT(''),
         'caption'=>gT('Show id at end of string.'),
       ),
+      'extraSurveyNeedQuestion'=>array(
+        'types'=>'XT',
+        'category'=>gT('Extra survey'),
+        'sortorder'=>60, /* Own category */
+        'inputtype'=>'switch',
+        'default'=>1,
+        'help'=>gT(''),
+        'caption'=>gT('Not show survey if question is empty.'),
+      ),
     );
 
     if(method_exists($this->getEvent(),'append')) {
@@ -266,6 +275,10 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
           echo $this->_getHtmlPreviousResponse($surveyId,$srid,$token,$qid);
           break;
         }
+      case 'validate':
+        break;
+      default:
+        // Nothing to do (except log error)
     }
   }
 
@@ -363,7 +376,7 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
    * @param boolean $qCodeSrid
    * @return void
    */
-  private function _getPreviousResponse($surveyId,$srid,$token,$qCodeText,$showId=false,$qCodeSrid=null) {
+  private function _getPreviousResponse($surveyId,$srid,$token,$qCodeText,$showId=false,$qCodeSrid=null,$qCodeEmpty=false) {
     $aSelect=array(
       'id',
       'token',
@@ -380,6 +393,10 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
     $oCriteria = new CDbCriteria;
     $oCriteria->select = $aSelect;
     $oCriteria->condition="token=:token";
+    if(!$qCodeEmpty && $qCodeText) {
+      $qQuotesCodeText=Yii::app()->db->quoteColumnName($qCodeText);
+      $oCriteria->addCondition("$qQuotesCodeText IS NOT NULL AND $qQuotesCodeText != ''");
+    }
     $oCriteria->params = array(":token"=>$token);
     if($qCodeSrid && $srid) {
       $oQuestionSrid=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$qCodeSrid));
@@ -441,7 +458,7 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
     $script.= "}\n";
     Yii::app()->getClientScript()->registerScript("questionExtraSurveyPage",$script,CClientScript::POS_READY);
     // Add as option in qid ?
-    
+    //$validateUrl = 
     //~ $jsUrl = Yii::app()->assetManager->publish(dirname(__FILE__) . '/assets/extraSurvey.js');
     //~ App()->getClientScript()->registerScriptFile($jsUrl,CClientScript::POS_READY);
 }

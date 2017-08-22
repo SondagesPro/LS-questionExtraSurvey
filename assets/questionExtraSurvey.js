@@ -93,3 +93,10 @@ $(document).on('click','[data-clearall]',function(event) {
     });
   
 });
+/* helper for disable enable close */
+function disableClose() {
+  $('#modal-questionExtraSurvey .btn-default').addClass("hidden");
+}
+function enableClose() {
+  $('#modal-questionExtraSurvey .btn-default').removeClass("hidden");
+}
