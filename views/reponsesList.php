@@ -28,7 +28,7 @@ foreach($aResponses as $id => $aResponse) {
     'class'=>$class,
   );
   $name='<i class="fa fa-plus-circle" aria-hidden="true"></i> Add a new instrument';
-  $content=CHtml::link($name,$newUrl,array('target'=>'frame-questionExtraSurvey'));
+  $content=CHtml::link($name,$newUrl,array('target'=>'frame-questionExtraSurvey','class'=>'hidden-print'));
   echo CHtml::tag('li',$aAttribute,$content);
 ?>
 </ul>
