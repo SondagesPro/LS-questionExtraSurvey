@@ -42,7 +42,7 @@ foreach($aResponses as $id => $aResponse) {
     $value = implode(",",array_keys($aValidResponse));
   }
   echo \CHtml::tag("div",array(
-    'class' => 'answer-item text-item',
+    'class' => 'answer-item text-item hidden',
     'aria-hidden' => 'true',
     'title' => '',
     ),
