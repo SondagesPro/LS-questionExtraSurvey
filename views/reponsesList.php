@@ -34,6 +34,8 @@ foreach($aResponses as $id => $aResponse) {
 </ul>
 <?php
 if($inputName) {
+  $aValidResponse = array();
+  //~ foreach(
   $value = implode(",",array_keys($aResponses));
   echo \CHtml::tag("div",array(
     'class' => 'answer-item text-item hidden',

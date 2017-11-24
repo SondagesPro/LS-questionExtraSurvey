@@ -6,7 +6,7 @@
  * @copyright 2017 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 0.2.0
+ * @version 0.2.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -308,7 +308,7 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
       'srid'=>$srid,
       'qid'=>$oEvent->get('qid'),
     ));
-    $listOfReponses="<div data-update-questionExtraSurvey='$ajaxUrl' data-input='answer{$name}'>{$listOfReponses}</div>";
+    $listOfReponses="<div data-update-questionExtraSurvey='$ajaxUrl'>{$listOfReponses}</div>";
     $oEvent->set("answers",$listOfReponses);
     $modalConfirm=Yii::app()->controller->renderPartial('questionExtraSurvey.views.modalConfirm',array(),1);
     Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalConfirm","$('body').prepend(".json_encode($modalConfirm).");",CClientScript::POS_READY);
@@ -330,7 +330,7 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
     $inputName=null;
     $oQuestion=Question::model()->find("qid=:qid",array(":qid"=>$qid));
     if(in_array($oQuestion->type,array("T","S"))) {
-      $inputName = $surveyId."X".$oQuestion->gid."X".$oQuestion->sid;
+      $inputName = $oQuestion->sid."X".$oQuestion->gid."X".$oQuestion->qid;
     }
     $qCodeText=trim($aAttributes['extraSurveyQuestion']);
     $showId=trim($aAttributes['extraSurveyShowId']);
