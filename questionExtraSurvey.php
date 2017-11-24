@@ -100,6 +100,15 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
         'help'=>gT(''),
         'caption'=>gT('Not show survey if question is empty.'),
       ),
+      'extraSurveySetSurveySubmittedOnly'=>array(
+        'types'=>'XT',
+        'category'=>gT('Extra survey'),
+        'sortorder'=>80, /* Own category */
+        'inputtype'=>'switch',
+        'default'=>1,
+        'help'=>gT(''),
+        'caption'=>gT('Fill answer with question id only if submitted.'),
+      ),
     );
 
     if(method_exists($this->getEvent(),'append')) {
@@ -335,6 +344,7 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
     $qCodeText=trim($aAttributes['extraSurveyQuestion']);
     $showId=trim($aAttributes['extraSurveyShowId']);
     $qCodeSrid=trim($aAttributes['extraSurveyQuestionLink']);
+    $setSubmittedSrid=trim($aAttributes['extraSurveySetSurveySubmittedOnly']);
     $aResponses=$this->_getPreviousResponse($surveyId,$srid,$token,$qCodeText,$showId,$qCodeSrid);
     $newUrlParam=array(
       'sid' =>$surveyId,
@@ -353,6 +363,7 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
       'token' => $token,
       'newUrl'=>Yii::app()->getController()->createUrl('survey/index',$newUrlParam),
       'inputName'=>$inputName,
+      'setSubmittedSrid'=>$setSubmittedSrid,
     );
     return Yii::app()->controller->renderPartial("questionExtraSurvey.views.reponsesList",$renderData,1);
   }

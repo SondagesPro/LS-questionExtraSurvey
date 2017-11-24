@@ -32,13 +32,17 @@ foreach($aResponses as $id => $aResponse) {
   echo CHtml::tag('li',$aAttribute,$content);
 ?>
 </ul>
-<?php
-if($inputName) {
-  $aValidResponse = array();
-  //~ foreach(
+<?php if($inputName) {?>
+  <?php
   $value = implode(",",array_keys($aResponses));
+  if($setSubmittedSrid) {
+    $aValidResponse = array_filter($aResponses, function ($aResponse) {
+      return (!empty($aResponse['submitdate']));
+    });
+    $value = implode(",",array_keys($aValidResponse));
+  }
   echo \CHtml::tag("div",array(
-    'class' => 'answer-item text-item hidden',
+    'class' => 'answer-item text-item',
     'aria-hidden' => 'true',
     'title' => '',
     ),
@@ -47,5 +51,9 @@ if($inputName) {
       'id' => 'answer'.$inputName,
     ))
   );
-}
-?>
+  ?>
+  <script>
+    $("#answer<?php echo $inputName?>").trigger("keyup");
+  </script>
+<?php }?>
+
