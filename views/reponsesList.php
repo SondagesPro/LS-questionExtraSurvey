@@ -32,3 +32,18 @@ foreach($aResponses as $id => $aResponse) {
   echo CHtml::tag('li',$aAttribute,$content);
 ?>
 </ul>
+<?php
+if($inputName) {
+  $value = implode(",",array_keys($aResponses));
+  echo \CHtml::tag("div",array(
+    'class' => 'answer-item text-item hidden',
+    'aria-hidden' => 'true',
+    'title' => '',
+    ),
+    \CHtml::textField($inputName,$value,array(
+      'class'=>'form-control',
+      'id' => 'answer'.$inputName,
+    ))
+  );
+}
+?>

@@ -6,7 +6,7 @@
  * @copyright 2017 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 0.1.0
+ * @version 0.2.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -294,21 +294,6 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
     $oEvent->set("class",$oEvent->get("class")." questionExtraSUrvey");
     $token=isset($_SESSION['survey_'.$oEvent->get('surveyId')]['token']) ? $_SESSION['survey_'.$oEvent->get('surveyId')]['token'] : null;
     $srid=isset($_SESSION['survey_'.$oEvent->get('surveyId')]['srid']) ? $_SESSION['survey_'.$oEvent->get('surveyId')]['srid'] : null;
-    $answer="";
-    if(in_array($oEvent->get('type'),array("T","S")) ) {
-      $name = "{$oEvent->get('surveyId')}X{$oEvent->get('gid')}X{$oEvent->get('qid')}";
-      // $value = $_SESSION['survey_'.$oEvent->get('surveyId')][$name] || "";
-      $value = isset($_SESSION['survey_'.$oEvent->get('surveyId')][$name]) ? $_SESSION['survey_'.$oEvent->get('surveyId')][$name] : "";
-      $answer=\CHtml::tag("div",array(
-        'class' => 'answer-item text-item hidden',
-        'aria-hidden' => 'true',
-        'title' => '',
-        ),
-        \CHtml::textField($name,$value,array(
-          'id' => 'answer'.$name,
-        ))
-      );
-    }
     Yii::setPathOfAlias('questionExtraSurvey',dirname(__FILE__));
     Yii::app()->clientScript->addPackage( 'questionExtraSurvey', array(
         'basePath'    => 'questionExtraSurvey.assets',
@@ -323,8 +308,8 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
       'srid'=>$srid,
       'qid'=>$oEvent->get('qid'),
     ));
-    $listOfReponses="<div data-update-questionExtraSurvey='$ajaxUrl'>{$listOfReponses}</div>";
-    $oEvent->set("answers",$answer.$listOfReponses);
+    $listOfReponses="<div data-update-questionExtraSurvey='$ajaxUrl' data-input='answer{$name}'>{$listOfReponses}</div>";
+    $oEvent->set("answers",$listOfReponses);
     $modalConfirm=Yii::app()->controller->renderPartial('questionExtraSurvey.views.modalConfirm',array(),1);
     Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalConfirm","$('body').prepend(".json_encode($modalConfirm).");",CClientScript::POS_READY);
     $modalSurvey=Yii::app()->controller->renderPartial('questionExtraSurvey.views.modalSurvey',array(),1);
@@ -342,6 +327,11 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
    */
   private function _getHtmlPreviousResponse($surveyId,$srid,$token,$qid) {
     $aAttributes=QuestionAttribute::model()->getQuestionAttributes($qid);
+    $inputName=null;
+    $oQuestion=Question::model()->find("qid=:qid",array(":qid"=>$qid));
+    if(in_array($oQuestion->type,array("T","S"))) {
+      $inputName = $surveyId."X".$oQuestion->gid."X".$oQuestion->sid;
+    }
     $qCodeText=trim($aAttributes['extraSurveyQuestion']);
     $showId=trim($aAttributes['extraSurveyShowId']);
     $qCodeSrid=trim($aAttributes['extraSurveyQuestionLink']);
@@ -362,6 +352,7 @@ class questionExtraSurvey extends \ls\pluginmanager\PluginBase
       'extrasurveyqid' => $qid,
       'token' => $token,
       'newUrl'=>Yii::app()->getController()->createUrl('survey/index',$newUrlParam),
+      'inputName'=>$inputName,
     );
     return Yii::app()->controller->renderPartial("questionExtraSurvey.views.reponsesList",$renderData,1);
   }
