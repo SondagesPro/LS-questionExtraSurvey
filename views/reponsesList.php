@@ -18,7 +18,7 @@ foreach($aResponses as $id => $aResponse) {
     //~ $aLinkAttribute['class']='text-warning';
     $extraContent='<i class="fa fa-square-o text-danger pull-right" aria-hidden="true"></i>';
   }
-  $content=$extraContent.CHtml::link($name,array("survey/index",'sid'=>$surveyid,'extrasurveyqid'=>$extrasurveyqid,'token'=>$token,'srid'=>$id),$aLinkAttribute);
+  $content=$extraContent.CHtml::link($name,array("survey/index",'sid'=>$surveyid,'extrasurveyqid'=>$extrasurveyqid,'token'=>$token,'extrasurveysrid'=>$id),$aLinkAttribute);
   echo CHtml::tag('li',$aAttribute,$content);
 }
 ?>
@@ -27,7 +27,7 @@ foreach($aResponses as $id => $aResponse) {
   $aAttribute=array(
     'class'=>$class,
   );
-  $name='<i class="fa fa-plus-circle" aria-hidden="true"></i> Add a new instrument';
+  $name='<i class="fa fa-plus-circle" aria-hidden="true"></i> '.$language['createNewreponse'];
   $content=CHtml::link($name,$newUrl,array('target'=>'frame-questionExtraSurvey'));
   echo CHtml::tag('li',$aAttribute,$content);
 ?>

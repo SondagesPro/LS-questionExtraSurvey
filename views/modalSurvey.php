@@ -7,11 +7,26 @@
         <div class="h4 modal-title"></div>
       </div>
       <div class="modal-body">
-        <iframe name="frame-questionExtraSurvey" class="extra-survey"></iframe></div>
+        <iframe name="frame-questionExtraSurvey" id="extra-survey-iframe"></iframe></div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary btn-survey" data-action="saveall">Save</button>
-        <button type="button" class="btn btn-success btn-survey" data-action="movesubmit">Submit</button>
+        <?php
+          echo CHtml::htmlButton($language['Close'],array('type'=>'button','class'=>"btn btn-warning",'data-dismiss'=>"modal"));
+          if(!empty($language['Delete'])) {
+            echo CHtml::htmlButton($language['Delete'],array('type'=>'button','class'=>"btn btn-danger",'data-action'=>"clearall",'disabled'=>true));
+          }
+          if(!empty($language['Previous'])) {
+            echo CHtml::htmlButton($language['Previous'],array('type'=>'button','class'=>"btn btn-default",'data-action'=>"moveprevious",'disabled'=>true));
+          }
+          if(!empty($language['Save'])) {
+            echo CHtml::htmlButton($language['Save'],array('type'=>'button','class'=>"btn btn-info",'data-action'=>"saveall",'disabled'=>true));
+          }
+          if(!empty($language['Next'])) {
+            echo CHtml::htmlButton($language['Next'],array('type'=>'button','class'=>"btn btn-primary",'data-action'=>"movenext",'disabled'=>true));
+          }
+          if(!empty($language['Submit'])) {
+            echo CHtml::htmlButton($language['Submit'],array('type'=>'button','class'=>"btn btn-success",'data-action'=>"movesubmit",'disabled'=>true));
+          }
+        ?>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->

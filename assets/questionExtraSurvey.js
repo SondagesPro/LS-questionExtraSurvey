@@ -68,7 +68,22 @@ function updateHeightModalbody(modal) {
     $(modal).find(".modal-body").css("height",finalHeight);
     $(modal).find(".modal-body iframe").css("height",finalHeight);
 }
-
-function surveySubmitted() {
-  $('#modal-questionExtraSurvey').modal('hide');
-}
+$(document).on('extrasurveyframe:on',function(event,data) {
+  $("#modal-questionExtraSurvey .modal-footer button[data-action]").each(function(){
+    $(this).prop('disabled',$("#extra-survey-iframe").contents().find("form#limesurvey button:submit[value='"+$(this).data('action')+"']").length < 1);
+    if($("#extra-survey-iframe").contents().find(".completed-text").length) {
+        $("#modal-questionExtraSurvey").modal('hide');
+    }
+  });
+});
+$(document).on('extrasurveyframe:off',function(event,data) {
+  $("#modal-questionExtraSurvey .modal-footer button[data-action]").each(function(){
+    $(this).prop('disabled',true);
+  });
+});
+$(document).on('extrasurveyframe:autoclose',function(event,data) {
+  $("#modal-questionExtraSurvey").modal('hide');
+});
+$(document).on('click',"#modal-questionExtraSurvey button[data-action]:not('disabled')",function(e) {
+    $("#extra-survey-iframe").contents().find("form#limesurvey button:submit[value='"+$(this).data('action')+"']").last().click();
+});
