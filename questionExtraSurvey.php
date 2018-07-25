@@ -544,7 +544,7 @@ class questionExtraSurvey extends PluginBase
   private function _getResponse($surveyid,$srid) {
     $oResponse  = Response::model($surveyid)->findByPk($srid);
     if(!$oResponse) {
-      throw new CHttpException(404,$this->_translate("Invalid initiative id"));
+      throw new CHttpException(404,$this->_translate("Invalid id"));
     }
     if(empty($oResponse->token)) {
       return $oResponse;
