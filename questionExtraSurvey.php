@@ -111,6 +111,15 @@ class questionExtraSurvey extends PluginBase
         'help'=>$this->_translate('Default to response (translated)'),
         'caption'=>$this->_translate('Show response as'),
       ),
+      'extraSurveyQuestionAllowDelete'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>40, /* Own category */
+        'inputtype'=>'switch',
+        'default'=>0,
+        'help'=>$this->_translate("Add a button to delete inside modal box, this don't update default LimeSurvey behaviour."),
+        'caption'=>$this->_translate('Allow delete response.'),
+      ),
       'extraSurveySetSurveySubmittedOnly'=>array(
         'types'=>'T',
         'category'=>$this->_translate('Extra survey'),
@@ -360,20 +369,39 @@ class questionExtraSurvey extends PluginBase
       'qid'=>$oEvent->get('qid'),
       'lang'=>Yii::app()->getLanguage(),
     ));
-    $listOfReponses="<div data-update-questionExtraSurvey='$ajaxUrl'>{$listOfReponses}</div>";
+    $oSurveyFrame = Survey::model()->findByPk($surveyId);
+    $reponseName = empty($aQuestionAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aQuestionAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
+    $modalParams = array(
+      'buttons' => array(
+        'clearall' => (bool)$aQuestionAttributes['extraSurveyQuestionAllowDelete'],
+        'saveall' => ($oSurveyFrame->allowsave == "Y"),
+        'moveprevious' => ($oSurveyFrame->allowprev == "Y" && $oSurveyFrame->format != "A"),
+        'movenext' => ($oSurveyFrame->format != "A"),
+        'movesubmit' => true,
+      ),
+      'language' => array(
+        'confirmDelete' => sprintf($this->_translate("Are you sure to remove this %s."),$reponseName),
+      ),
+    );
+    $listOfReponses="<div data-update-questionextrasurvey='$ajaxUrl' data-modalparams-questionextrasurvey='".ls_json_encode($modalParams)."'>{$listOfReponses}</div>";
     $oEvent->set("answers",$listOfReponses);
-    $this->_addModal();
+    $this->_addModal($oEvent->get('qid'),$aQuestionAttributes);
   }
 
   /**
    * Add modal script at end of page with javascript
    * @return void
    */
-  private function _addModal()
+  private function _addModal($qid,$aQuestionAttributes)
   {
     $renderData=array(
+      'qid' => $qid,
       'language' => array(
+        'confirmDelete' => sprintf($this->_translate("Are you sure to remove this %s."),strtolower(gT("Response"))),
+        'Yes'=> gT("Yes"),
+        'No'=> gT("No"),
         'Close'=>gT("Close"),
+        'Delete'=> gT("Delete"),
         'Save'=>gT("Save"),
         'Previous'=>gT("Previous"),
         'Next'=>gT("Next"),
@@ -381,16 +409,16 @@ class questionExtraSurvey extends PluginBase
       ),
     );
     $posReady = CClientScript::POS_READY;
-    if(!Yii::app()->getClientScript()->isScriptRegistered("questionExtraSurveyModalConfirm",$posReady)) {
+    if(!Yii::app()->getClientScript()->isScriptRegistered("questionExtraSurveyModalConfirm{$qid}",$posReady)) {
       $modalConfirm=Yii::app()->controller->renderPartial('questionExtraSurvey.views.modalConfirm',$renderData,1);
-      Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalConfirm","$('body').prepend(".json_encode($modalConfirm).");",CClientScript::POS_READY);
+      Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalConfirm{$qid}","$('body').prepend(".json_encode($modalConfirm).");",$posReady);
     }
-    if(!Yii::app()->getClientScript()->isScriptRegistered("questionExtraSurveyModalSurvey",$posReady)) {
+    if(!Yii::app()->getClientScript()->isScriptRegistered("questionExtraSurveyModalSurvey{$qid}",$posReady)) {
       $modalSurvey=Yii::app()->controller->renderPartial('questionExtraSurvey.views.modalSurvey',$renderData,1);
-      Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalSurvey","$('body').prepend(".json_encode($modalSurvey).");",CClientScript::POS_READY);
+      Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalSurvey{$qid}","$('body').prepend(".json_encode($modalSurvey).");",$posReady);
     }
-
   }
+
   /**
    * Set the answwer and other parameters for the system
    * @param int $surveyId

@@ -6,6 +6,19 @@
  */
 $(document).on('click','[target="frame-questionExtraSurvey"]',function(event) {
   event.preventDefault();
+  var modalbuttons = { "clearall":false,"saveall":false,"moveprevious":false,"movenext":true,"movesubmit":true };
+  var modalparams = $(this).closest("[data-modalparams-questionextrasurvey]").data('modalparams-questionextrasurvey');
+  $.extend(modalbuttons, modalparams.buttons);
+  $.each(modalbuttons,function( key, value ) {
+    if(value){
+      $("#modal-questionExtraSurvey button[data-action='"+key+"']").show();
+    }else{
+      $("#modal-questionExtraSurvey button[data-action='"+key+"']").hide();
+    }
+  });
+  if(modalparams.language.confirmDelete) {
+    $("#label-questionExtraSurvey-confirm-clearall").text(modalparams.language.confirmDelete);
+  }
   $('#modal-questionExtraSurvey').find('.modal-title').text($(this).text());
   $("#modal-questionExtraSurvey iframe").attr({'src':$(this).attr('href')});
   $("#modal-questionExtraSurvey").modal('show');
@@ -47,10 +60,7 @@ function updateList(element) {
           $(element).html(data);
         },
         error: function (xhr, status) {
-            //alert("Sorry, there was a problem!");
-        },
-        complete: function (xhr, status) {
-            //$('#showresults').slideDown('slow')
+            //TODO
         }
     });
   }
