@@ -11,9 +11,9 @@ $(document).on('click','[target="frame-questionExtraSurvey"]',function(event) {
   $.extend(modalbuttons, modalparams.buttons);
   $.each(modalbuttons,function( key, value ) {
     if(value){
-      $("#modal-questionExtraSurvey button[data-action='"+key+"']").show();
+      $("#modal-questionExtraSurvey button[data-action='"+key+"']").removeClass("hidden");
     }else{
-      $("#modal-questionExtraSurvey button[data-action='"+key+"']").hide();
+      $("#modal-questionExtraSurvey button[data-action='"+key+"']").addClass("hidden");
     }
   });
   if(modalparams.language.confirmDelete) {

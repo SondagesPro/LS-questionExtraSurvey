@@ -155,18 +155,18 @@ class questionExtraSurvey extends PluginBase
         $aSessionExtraSurvey=array();
     }
     $currentSrid = isset($_SESSION['survey_'.$iSurveyId]['srid']) ? $_SESSION['survey_'.$iSurveyId]['srid'] : null;
-    if((Yii::app()->getRequest()->getParam('move')=='clearall' || Yii::app()->getRequest()->getParam('clearall')) && Yii::app()->getRequest()->getParam('extraSurvey')) {
+    if((Yii::app()->getRequest()->getParam('move')=='clearall' || Yii::app()->getRequest()->getParam('clearall'))) {
       if(isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid) {
         $oResponse=Response::model($iSurveyId)->find("id = :srid",array(":srid"=>$_SESSION['survey_'.$iSurveyId]['srid']));
         if($oResponse) {
           $oResponse->delete();
         }
-        unset($aSessionExtraSurvey[$iSurveyId]);
         Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
         $renderMessage = new \renderMessage\messageHelper();
         $this->_registerExtraSurveyScript();
         App()->getClientScript()->registerScript("questionExtraSurveyComplete","autoclose();\n",CClientScript::POS_END);
         $aAttributes=QuestionAttribute::model()->getQuestionAttributes($aSessionExtraSurvey[$iSurveyId]);
+        unset($aSessionExtraSurvey[$iSurveyId]);
         $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
         $renderMessage->render(sprintf($this->_translate("%s deleted, you can close this window."),$reponseName));
       }
@@ -220,18 +220,25 @@ class questionExtraSurvey extends PluginBase
   }
 
   /**
-   *Ad script after survey complete
+   *Add script after survey complete
    */
   public function afterSurveyComplete() {
-    $iSurveyId=$this->event->get('surveyId');
+    $iSurveyId = $this->event->get('surveyId');
+    $currentSrid = $this->event->get('responseId');
     $aSessionExtraSurvey=Yii::app()->session["questionExtraSurvey"];
     if(isset($aSessionExtraSurvey[$iSurveyId])) {
       unset($aSessionExtraSurvey[$iSurveyId]);
       Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
-      $script = "if(window.location != window.parent.location && jQuery.isFunction(window.parent.surveySubmitted)) {\n";
-      $script.= "  window.parent.surveySubmitted();\n";
+      $script = "if(window.location != window.parent.location) {\n";
+      $script.= "  window.parent.$(window.parent.document).trigger('extrasurveyframe:autoclose');\n";
       $script.= "}\n";
       Yii::app()->getClientScript()->registerScript("questionExtraSurveyComplete",$script,CClientScript::POS_END);
+      if($currentSrid && Yii::getPathOfAlias('reloadAnyResponse')) {
+        \reloadAnyResponse\models\surveySession::model()->deleteByPk(array('sid'=>$iSurveyId,'srid'=>$currentSrid));
+      }
+      if($currentSrid && Yii::getPathOfAlias('renderMessage')) {
+          \renderMessage\messageHelper::renderAlert($this->_translate("Your responses was saved as complete, you can close this windows."));
+      }
     }
   }
   /**
