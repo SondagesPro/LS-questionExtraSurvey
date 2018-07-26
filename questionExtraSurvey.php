@@ -390,6 +390,7 @@ class questionExtraSurvey extends PluginBase
         'confirmDelete' => sprintf($this->_translate("Are you sure to remove this %s."),$reponseName),
       ),
     );
+
     $listOfReponses="<div data-update-questionextrasurvey='$ajaxUrl' data-modalparams-questionextrasurvey='".ls_json_encode($modalParams)."'>{$listOfReponses}</div>";
     $oEvent->set("answers",$listOfReponses);
     $this->_addModal($oEvent->get('qid'),$aQuestionAttributes);
