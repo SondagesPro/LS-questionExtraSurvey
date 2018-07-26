@@ -16,11 +16,11 @@ $(document).on('click','[target="frame-questionExtraSurvey"]',function(event) {
       $("#modal-questionExtraSurvey button[data-action='"+key+"']").addClass("hidden");
     }
   });
-  if(modalparams.language.confirmDelete) {
-    $("#label-questionExtraSurvey-confirm-clearall").text(modalparams.language.confirmDelete);
+  if(typeof modalparams.language['Are you sure to remove this response.'] === 'string' ) {
+    $("#label-questionExtraSurvey-confirm-clearall").text(modalparams.language['Are you sure to remove this response.']);
   }
   $('#modal-questionExtraSurvey').find('.modal-title').text($(this).text());
-  $("#modal-questionExtraSurvey iframe").attr({'src':$(this).attr('href')});
+  $("#modal-questionExtraSurvey iframe").html("").attr('src',$(this).attr('href'));
   $("#modal-questionExtraSurvey").modal('show');
 });
 $(document).on("shown.bs.modal",function(e) {
@@ -28,21 +28,24 @@ $(document).on("shown.bs.modal",function(e) {
     window.parent.$(window.parent.document).trigger("modaliniframe:on");
   }
   if(e.target && $(e.target).attr('id')=='modal-questionExtraSurvey' ) {
-     updateHeightModalbody("#modal-questionExtraSurvey");
+     updateHeightModalbody();
   }
+});
+$(document).on("show.bs.modal","#modal-questionExtraSurvey",function(e) {
+});
+$(document).on("shown.bs.modal","#modal-questionExtraSurvey",function(e) {
+  updateHeightModalbody("#modal-questionExtraSurvey");
 });
 $(document).on("hide.bs.modal",function(e) {
   if(window.location != window.parent.location) {
     window.parent.$(window.parent.document).trigger("modaliniframe:off");
   }
-  if(e.target) {
-    if($(e.target).attr('id')=='modal-questionExtraSurvey') {
-      $("[data-update-questionextrasurvey]").each(function(){
-        updateList($(this));
-      });
-      $("#modal-questionExtraSurvey iframe").attr({'src':""});
-    }
-  }
+});
+$(document).on("hide.bs.modal",'#modal-questionExtraSurvey',function(e) {
+  $("[data-update-questionextrasurvey]").each(function(){
+    updateList($(this));
+  });
+  $("#modal-questionExtraSurvey iframe").html("").attr("src", "");
 });
 $(document).on("click","#modal-questionExtraSurvey button[data-action]",function(event) {
   event.preventDefault();
@@ -84,6 +87,7 @@ $(document).on('extrasurveyframe:on',function(event,data) {
     if($("#extra-survey-iframe").contents().find(".completed-text").length) {
         $("#modal-questionExtraSurvey").modal('hide');
     }
+    // todo : add it in option $("#extra-survey-iframe").contents().find(".navigator").addClass("hidden");
   });
 });
 $(document).on('extrasurveyframe:off',function(event,data) {
@@ -95,5 +99,18 @@ $(document).on('extrasurveyframe:autoclose',function(event,data) {
   $("#modal-questionExtraSurvey").modal('hide');
 });
 $(document).on('click',"#modal-questionExtraSurvey button[data-action]:not('disabled')",function(e) {
+  if($(this).data('action') == 'clearall') {
+    $("#modal-confirm-clearall-extrasurvey").show();
+    $("#modal-confirm-clearall-extrasurvey .btn-confirm").on('click',function(){
+      $("#modal-questionExtraSurvey iframe").contents().find("input[name='confirm-clearall']").prop("checked",true);
+      $("#modal-questionExtraSurvey iframe").contents().find("#limesurvey").append("<input type='hidden' name='extraSurvey' value='1'>");
+      $("#modal-questionExtraSurvey iframe").contents().find("button[value='clearall']").removeAttr('data-confirmedby').click();
+    });
+    $("#modal-confirm-clearall-extrasurvey [data-dismiss]").on('click',function(){
+      // LimeSurve 3.13 have an issue with dialog box not closed …
+      $("#modal-confirm-clearall-extrasurvey").hide();
+    });
+    return;
+  }
     $("#extra-survey-iframe").contents().find("form#limesurvey button:submit[value='"+$(this).data('action')+"']").last().click();
 });

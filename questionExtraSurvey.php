@@ -155,45 +155,7 @@ class questionExtraSurvey extends PluginBase
         $aSessionExtraSurvey=array();
     }
     $currentSrid = isset($_SESSION['survey_'.$iSurveyId]['srid']) ? $_SESSION['survey_'.$iSurveyId]['srid'] : null;
-    if((Yii::app()->getRequest()->getParam('move')=='clearall' || Yii::app()->getRequest()->getParam('clearall'))) {
-      if(isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid) {
-        $oResponse=Response::model($iSurveyId)->find("id = :srid",array(":srid"=>$_SESSION['survey_'.$iSurveyId]['srid']));
-        if($oResponse) {
-          $oResponse->delete();
-        }
-        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
-        $renderMessage = new \renderMessage\messageHelper();
-        $this->_registerExtraSurveyScript();
-        App()->getClientScript()->registerScript("questionExtraSurveyComplete","autoclose();\n",CClientScript::POS_END);
-        $aAttributes=QuestionAttribute::model()->getQuestionAttributes($aSessionExtraSurvey[$iSurveyId]);
-        unset($aSessionExtraSurvey[$iSurveyId]);
-        $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
-        $renderMessage->render(sprintf($this->_translate("%s deleted, you can close this window."),$reponseName));
-      }
-    }
-    if((Yii::app()->getRequest()->getParam('move')=='saveall' || Yii::app()->getRequest()->getParam('saveall'))) {
-      if(isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid ) {
-        $oSurvey = Survey::model()->findByPk($iSurveyId);
-        $this->_registerExtraSurveyScript();
-        //~ App()->getClientScript()->registerScript("questionExtraSurveySaved","autoclose();\n",CClientScript::POS_END);
-        if($oSurvey->active == "Y") {
-            $step = isset($_SESSION['survey_'.$iSurveyId]['step']) ? $_SESSION['survey_'.$iSurveyId]['step'] : 0;
-            LimeExpressionManager::JumpTo($step, false);
-            $oResponse = SurveyDynamic::model($iSurveyId)->findByPk($currentSrid);
-            $oResponse->lastpage = $step; // Or restart at 1st page ?
-            // Save must force always to not submitted (draft)
-            $oResponse->submitdate = null;
-            $oResponse->save();
-        }
-        killSurveySession($iSurveyId);
-        if(Yii::getPathOfAlias('reloadAnyResponse')) {
-          \reloadAnyResponse\models\surveySession::model()->deleteByPk(array('sid'=>$iSurveyId,'srid'=>$currentSrid));
-        }
-        if(Yii::getPathOfAlias('renderMessage')) {
-            \renderMessage\messageHelper::renderAlert($this->_translate("Your responses was saved with success, you can close this windows."));
-        }
-      }
-    }
+
     if(Yii::app()->getRequest()->getQuery('extrasurveysrid') && Yii::app()->getRequest()->getParam('extrasurveyqid')) {
       $title=$oSurvey->getLocalizedTitle(); // @todo : get default lang title
       /* search if it's a related survey */
@@ -207,16 +169,68 @@ class questionExtraSurvey extends PluginBase
       if($oAttributeExtraSurvey) {
         $aSessionExtraSurvey[$iSurveyId]=$oAttributeExtraSurvey->qid;
         $currentlang = Yii::app()->getLanguage();
-        killSurveySession($iSurveyId);
+        //~ killSurveySession($iSurveyId);
         SetSurveyLanguage($iSurveyId, $currentlang); // frontend_helper function
         $this->qid = Yii::app()->getRequest()->getParam('extrasurveyqid');
         $aSessionExtraSurvey[$iSurveyId]=$oAttributeExtraSurvey->qid;
         Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
       }
     }
-    if(isset($aSessionExtraSurvey[$iSurveyId])) {
-        $this->_registerExtraSurveyScript();
+    if(!isset($aSessionExtraSurvey[$iSurveyId])) {
+      /* Quit if we are not in survey inside surey system */
+      return;
     }
+    Template::model()->getInstance(null, $iSurveyId)->oOptions->ajaxmode = 'off';
+    if((Yii::app()->getRequest()->getParam('move')=='clearall' || Yii::app()->getRequest()->getParam('clearall'))) {
+      if(isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid) {
+        $oResponse=Response::model($iSurveyId)->find("id = :srid",array(":srid"=>$_SESSION['survey_'.$iSurveyId]['srid']));
+        if($oResponse) {
+          $oResponse->delete();
+        }
+        if(Yii::getPathOfAlias('reloadAnyResponse')) {
+          \reloadAnyResponse\models\surveySession::model()->deleteByPk(array('sid'=>$iSurveyId,'srid'=>$currentSrid));
+        }
+        $renderMessage = new \renderMessage\messageHelper();
+        $this->_registerExtraSurveyScript();
+        App()->getClientScript()->registerScript("questionExtraSurveyComplete","autoclose();\n",CClientScript::POS_END);
+        $aAttributes=QuestionAttribute::model()->getQuestionAttributes($aSessionExtraSurvey[$iSurveyId]);
+        unset($aSessionExtraSurvey[$iSurveyId]);
+        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+        $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
+        $renderMessage->render(sprintf($this->_translate("%s deleted, you can close this window."),$reponseName));
+      }
+    }
+    if((Yii::app()->getRequest()->getParam('move')=='saveall' || Yii::app()->getRequest()->getParam('saveall'))) {
+      if(isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid ) {
+        $oSurvey = Survey::model()->findByPk($iSurveyId);
+        //~ App()->getClientScript()->registerScript("questionExtraSurveySaved","autoclose();\n",CClientScript::POS_END);
+        if($oSurvey->active == "Y") {
+            $script = "if(window.location != window.parent.location) {\n";
+            $script = "    window.parent.$(window.parent.document).trigger('extrasurveyframe:autoclose');\n";
+            $script = "}\n";
+            $step = isset($_SESSION['survey_'.$iSurveyId]['step']) ? $_SESSION['survey_'.$iSurveyId]['step'] : 0;
+            LimeExpressionManager::JumpTo($step, false);
+            $oResponse = SurveyDynamic::model($iSurveyId)->findByPk($currentSrid);
+            $oResponse->lastpage = $step; // Or restart at 1st page ?
+            // Save must force always to not submitted (draft)
+            $oResponse->submitdate = null;
+            $oResponse->save();
+        }
+        $this->_registerExtraSurveyScript();
+        App()->getClientScript()->registerScript("questionExtraSurveyComplete","autoclose();\n",CClientScript::POS_END);
+        killSurveySession($iSurveyId);
+        unset($aSessionExtraSurvey[$iSurveyId]);
+        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+        if(Yii::getPathOfAlias('reloadAnyResponse')) {
+          \reloadAnyResponse\models\surveySession::model()->deleteByPk(array('sid'=>$iSurveyId,'srid'=>$currentSrid));
+        }
+        if(Yii::getPathOfAlias('renderMessage')) {
+            \renderMessage\messageHelper::renderAlert($this->_translate("Your responses was saved with success, you can close this windows."));
+        }
+      }
+    }
+    $this->_registerExtraSurveyScript();
+
   }
 
   /**
@@ -250,7 +264,7 @@ class questionExtraSurvey extends PluginBase
     }
     $iSurveyId=$this->getEvent()->get('surveyId');
     if(Yii::app()->getRequest()->getParam('extrasurveysrid')=='new') {
-      $this->getEvent()->set('response',false);
+      //~ $this->getEvent()->set('response',false);
       return;
     }
     if(Yii::app()->getRequest()->getParam('extrasurveysrid')) {
@@ -387,7 +401,7 @@ class questionExtraSurvey extends PluginBase
         'movesubmit' => true,
       ),
       'language' => array(
-        'confirmDelete' => sprintf($this->_translate("Are you sure to remove this %s."),$reponseName),
+        'Are you sure to remove this response.' => sprintf($this->_translate("Are you sure to remove this %s."),$reponseName),
       ),
     );
 
@@ -405,7 +419,7 @@ class questionExtraSurvey extends PluginBase
     $renderData=array(
       'qid' => $qid,
       'language' => array(
-        'confirmDelete' => sprintf($this->_translate("Are you sure to remove this %s."),strtolower(gT("Response"))),
+        'Are you sure to remove this response.' => sprintf($this->_translate("Are you sure to remove this %s."),strtolower(gT("Response"))),
         'Yes'=> gT("Yes"),
         'No'=> gT("No"),
         'Close'=>gT("Close"),
@@ -417,13 +431,13 @@ class questionExtraSurvey extends PluginBase
       ),
     );
     $posReady = CClientScript::POS_READY;
-    if(!Yii::app()->getClientScript()->isScriptRegistered("questionExtraSurveyModalConfirm{$qid}",$posReady)) {
+    if(!Yii::app()->getClientScript()->isScriptRegistered("questionExtraSurveyModalConfirm",$posReady)) {
       $modalConfirm=Yii::app()->controller->renderPartial('questionExtraSurvey.views.modalConfirm',$renderData,1);
-      Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalConfirm{$qid}","$('body').prepend(".json_encode($modalConfirm).");",$posReady);
+      Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalConfirm","$('body').prepend(".json_encode($modalConfirm).");",$posReady);
     }
-    if(!Yii::app()->getClientScript()->isScriptRegistered("questionExtraSurveyModalSurvey{$qid}",$posReady)) {
+    if(!Yii::app()->getClientScript()->isScriptRegistered("questionExtraSurveyModalSurvey",$posReady)) {
       $modalSurvey=Yii::app()->controller->renderPartial('questionExtraSurvey.views.modalSurvey',$renderData,1);
-      Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalSurvey{$qid}","$('body').prepend(".json_encode($modalSurvey).");",$posReady);
+      Yii::app()->getClientScript()->registerScript("questionExtraSurveyModalSurvey","$('body').prepend(".json_encode($modalSurvey).");",$posReady);
     }
   }
 
