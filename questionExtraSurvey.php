@@ -180,7 +180,9 @@ class questionExtraSurvey extends PluginBase
       /* Quit if we are not in survey inside surey system */
       return;
     }
-    Template::model()->getInstance(null, $iSurveyId)->oOptions->ajaxmode = 'off';
+    if(version_compare(Yii::app()->getConfig('versionnumber'),"3",">=")) {
+      Template::model()->getInstance(null, $iSurveyId)->oOptions->ajaxmode = 'off';
+    }
     if((Yii::app()->getRequest()->getParam('move')=='clearall' || Yii::app()->getRequest()->getParam('clearall'))) {
       if(isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid) {
         $oResponse=Response::model($iSurveyId)->find("id = :srid",array(":srid"=>$_SESSION['survey_'.$iSurveyId]['srid']));
