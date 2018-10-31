@@ -6,7 +6,7 @@
  * @copyright 2017 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.0.0
+ * @version 1.1.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -512,7 +512,7 @@ class questionExtraSurvey extends PluginBase
     /* Find the question code */
     $oQuestionText=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$qCodeText));
     $qCodeText = null;
-    if($oQuestionText && in_array($oQuestionText->type,array("T","L","!","S")) ) {
+    if($oQuestionText && in_array($oQuestionText->type,array("T","L","!","S","N","D")) ) {
       $qCodeText = $aSelect[] = "{$oQuestionText->sid}X{$oQuestionText->gid}X{$oQuestionText->qid}";
     }
 
@@ -530,7 +530,7 @@ class questionExtraSurvey extends PluginBase
       $oQuestionSrid=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$qCodeSrid));
       if($oQuestionSrid && in_array($oQuestionSrid->type,array("T","S")) ) {
         $qCodeSrid = "{$oQuestionSrid->sid}X{$oQuestionSrid->gid}X{$oQuestionSrid->qid}";
-        $oCriteria->compare($qCodeSrid,$srid);
+        $oCriteria->compare(Yii::app()->db->quoteColumnName($qCodeSrid),$srid);
       }
     }
     if(Survey::model()->findByPk($surveyId)->datestamp == "Y") {
