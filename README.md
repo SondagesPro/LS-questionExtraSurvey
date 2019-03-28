@@ -2,6 +2,8 @@
 
 Add survey inside survey : create question with list of response in another survey
 
+**Warning** : This plugin is not compatible with theme option ajax mode. You must use a theme without ajax mode or deactivate the ajax mode in theme option.
+
 ## Installation
 
 This plugin is tested with LimeSurvey 2.73, and 3.16.1
