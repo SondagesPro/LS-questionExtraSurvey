@@ -22,13 +22,14 @@ This plugin is tested with LimeSurvey 2.73, and 3.16.1
 This plugin need 2 surveys with token and not anonymous.
 
 1. Create the 1st survey and add a long text question
+    - The plugin is done for survey with token, not anonymous, token-based response persistence and allow edit response activated.
 2. Create the second survey with
     - An hidden question to get the response identification of the first survey (for example surveyLinkSrid)
     - Your real question
 3. Create and set the token to the 2 surveys with same token list. The second survey must be
-    - Not anonymous
-    - Token-based response persistence activated
-    - Allow multiple responses activated
+    - **Not anonymous**
+    - Token-based response **persistence not activated** or **Use left up to 1** (if you wnt to limit number of response by token)
+    - **Allow multiple responses** activated
 4. Update the short text question settings with
     - Survey to use: the survey id of the second survey
     - Question for response id : the response code for identification (for example surveyLinkSrid)
