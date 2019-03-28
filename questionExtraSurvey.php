@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.1.2
+ * @version 1.1.3
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -504,14 +504,15 @@ class questionExtraSurvey extends PluginBase
     $oQuestionText=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$qCodeText));
     $qCodeText = null;
     if($oQuestionText && in_array($oQuestionText->type,array("S","T","U","L","!","O","N","D","G","Y","*")) ) {
-      $qCodeText = $aSelect[] = "{$oQuestionText->sid}X{$oQuestionText->gid}X{$oQuestionText->qid}";
+      $qCodeText = "{$oQuestionText->sid}X{$oQuestionText->gid}X{$oQuestionText->qid}";
+      $aSelect[] = Yii::app()->db->quoteColumnName($qCodeText);
     }
 
     $oCriteria = new CDbCriteria;
     $oCriteria->select = $aSelect;
     $oCriteria->condition = "";
     if(!$qCodeEmpty && $qCodeText) {
-      $qQuotesCodeText=Yii::app()->db->quoteColumnName($qCodeText);
+      $qQuotesCodeText = Yii::app()->db->quoteColumnName($qCodeText);
       $oCriteria->addCondition("$qQuotesCodeText IS NOT NULL AND $qQuotesCodeText != ''");
     }
     if($token) {
@@ -547,7 +548,7 @@ class questionExtraSurvey extends PluginBase
               $oAnswer=Answer::model()->find("qid=:qid and language=:language and code=:code",array(
                 ':qid' => $oQuestionText->qid,
                 ':language' => Yii::app()->getLanguage(),
-                ':code'=>$oResponse->$qCodeText,
+                ':code'=>$oResponse->getAttribute($qCodeText),
               ));
               if($oAnswer) {
                 $aResponses[$oResponse->id]['text'] .= $oAnswer->answer;
