@@ -80,7 +80,7 @@ class questionExtraSurvey extends PluginBase
         'sortorder'=>40, /* Own category */
         'inputtype'=>'text',
         'default'=>'',
-        'help'=>$this->_translate('This can be text question type, numeric question type or single choice question type.'),
+        'help'=>$this->_translate('This can be text question type, single choice question type or equation question type.'),
         'caption'=>$this->_translate('Question code for listing.'),
       ),
       'extraSurveyShowId'=>array(
@@ -121,7 +121,6 @@ class questionExtraSurvey extends PluginBase
         'caption'=>$this->_translate('Fill answer with question id only if submitted.'),
       ),
     );
-
     if(method_exists($this->getEvent(),'append')) {
       $this->getEvent()->append('questionAttributes', $extraAttributes);
     } else {
@@ -129,6 +128,7 @@ class questionExtraSurvey extends PluginBase
       $questionAttributes=array_merge($questionAttributes,$extraAttributes);
       $this->event->set('questionAttributes',$questionAttributes);
     }
+
   }
 
   /**
@@ -503,7 +503,7 @@ class questionExtraSurvey extends PluginBase
     /* Find the question code */
     $oQuestionText=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$qCodeText));
     $qCodeText = null;
-    if($oQuestionText && in_array($oQuestionText->type,array("T","L","!","S","N","D")) ) {
+    if($oQuestionText && in_array($oQuestionText->type,array("S","T","U","L","!","O","N","D","G","Y","*")) ) {
       $qCodeText = $aSelect[] = "{$oQuestionText->sid}X{$oQuestionText->gid}X{$oQuestionText->qid}";
     }
 
@@ -519,7 +519,7 @@ class questionExtraSurvey extends PluginBase
     }
     if($qCodeSrid && $srid) {
       $oQuestionSrid=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$qCodeSrid));
-      if($oQuestionSrid && in_array($oQuestionSrid->type,array("T","S")) ) {
+      if($oQuestionSrid && in_array($oQuestionSrid->type,array("T","S","N")) ) {
         $qCodeSrid = "{$oQuestionSrid->sid}X{$oQuestionSrid->gid}X{$oQuestionSrid->qid}";
         $oCriteria->compare(Yii::app()->db->quoteColumnName($qCodeSrid),$srid);
       }
