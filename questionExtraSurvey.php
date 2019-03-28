@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.1.1
+ * @version 1.1.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -376,7 +376,7 @@ class questionExtraSurvey extends PluginBase
     ));
     Yii::app()->getClientScript()->registerPackage('questionExtraSurveyManage');
     $listOfReponses = $this->_getHtmlPreviousResponse($surveyId,$srid,$token,$oEvent->get('qid'));
-    $ajaxUrl=$this->api->createUrl('plugins/direct', array('plugin' => 'questionExtraSurvey', 'function' => 'update',
+    $ajaxUrl = Yii::app()->getController()->createUrl('plugins/direct', array('plugin' => 'questionExtraSurvey', 'function' => 'update',
       'surveyid'=>$surveyId,
       'token'=>$token,
       'extrasurveysrid'=>$srid,
