@@ -3,10 +3,10 @@
  * questionExtraSurvey use a question to add survey inside survey
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2017 Denis Chenu <www.sondages.pro>
+ * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.1.0
+ * @version 1.1.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -73,15 +73,6 @@ class questionExtraSurvey extends PluginBase
         'default'=>'',
         'help'=>$this->_translate('The question code in the extra survey to be used.'),
         'caption'=>$this->_translate('Question for response id'),
-      ),
-      'extraSurveyQuestionUseUniqId'=>array(
-        'types'=>'T',
-        'category'=>$this->_translate('Extra survey'),
-        'sortorder'=>35, /* Own category */
-        'inputtype'=>'switch',
-        'default'=>1,
-        'help'=>$this->_translate('The link is done using an unique id saved in this question.'),
-        'caption'=>$this->_translate('Use unique id as reponse id.'),
       ),
       'extraSurveyQuestion'=>array(
         'types'=>'XT',
