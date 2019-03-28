@@ -21,9 +21,8 @@
  */
 class questionExtraSurvey extends PluginBase
 {
-
   static protected $name = 'questionExtraSurvey';
-  static protected $description = 'Add survey inside survey.';
+  static protected $description = 'Add survey inside survey : need a survey not anonymous and with token table for the 2 surveys.';
 
   protected $storage = 'DbStorage';
 
@@ -156,6 +155,7 @@ class questionExtraSurvey extends PluginBase
         ':title' => $title,
         ':qid' => Yii::app()->getRequest()->getParam('extrasurveyqid'),
       ));
+      
       /* Validate if usage of extraSurvey is OK here with current qid */
       if($oAttributeExtraSurvey) {
         $aSessionExtraSurvey[$iSurveyId]=$oAttributeExtraSurvey->qid;
