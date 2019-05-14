@@ -1,7 +1,7 @@
-<ul class="list-unstyled">
+<ul class="list-group">
 <?php
 foreach($aResponses as $id => $aResponse) {
-  $class='';
+  $class='list-group-item';
   $aAttribute=array(
     'class'=>$class,
   );
@@ -23,7 +23,7 @@ foreach($aResponses as $id => $aResponse) {
 }
 ?>
 <?php
-  $class='';
+  $class='list-group-item ';
   $aAttribute=array(
     'class'=>$class,
   );

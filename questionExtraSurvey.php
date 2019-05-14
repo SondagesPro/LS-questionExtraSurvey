@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.1.3
+ * @version 1.1.4
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -539,7 +539,7 @@ class questionExtraSurvey extends PluginBase
         );
         $aResponses[$oResponse->id]['text'] = "";
         if($showId) {
-          $aResponses[$oResponse->id]['text'] .= \CHtml::tag('span',array('class'=>'label label-info'),$oResponse->id);
+          $aResponses[$oResponse->id]['text'] .= \CHtml::tag('span',array('class'=>'badge'),$oResponse->id);
         }
         if($qCodeText) {
           switch ($oQuestionText->type) {
