@@ -58,7 +58,7 @@ class questionExtraSurvey extends PluginBase
       'extraSurvey'=>array(
         'types'=>'XT',
         'category'=>$this->_translate('Extra survey'),
-        'sortorder'=>20, /* Own category */
+        'sortorder'=>10, /* Own category */
         'inputtype'=>'text',
         'default'=>'',
         'help'=>$this->_translate('If is integer : search the survey id, else search by name of survey (first activated one is choosen)'),
@@ -67,16 +67,16 @@ class questionExtraSurvey extends PluginBase
       'extraSurveyQuestionLink'=>array(
         'types'=>'XT',
         'category'=>$this->_translate('Extra survey'),
-        'sortorder'=>30, /* Own category */
+        'sortorder'=>20, /* Own category */
         'inputtype'=>'text',
         'default'=>'',
-        'help'=>$this->_translate('The question code in the extra survey to be used.'),
+        'help'=>$this->_translate('The question code in the extra survey to be used. If empty : only token or optionnal fields was used for the link.'),
         'caption'=>$this->_translate('Question for response id'),
       ),
       'extraSurveyQuestion'=>array(
         'types'=>'XT',
         'category'=>$this->_translate('Extra survey'),
-        'sortorder'=>40, /* Own category */
+        'sortorder'=>30, /* Own category */
         'inputtype'=>'text',
         'default'=>'',
         'help'=>$this->_translate('This can be text question type, single choice question type or equation question type.'),
@@ -85,26 +85,35 @@ class questionExtraSurvey extends PluginBase
       'extraSurveyShowId'=>array(
         'types'=>'XT',
         'category'=>$this->_translate('Extra survey'),
-        'sortorder'=>50, /* Own category */
+        'sortorder'=>40, /* Own category */
         'inputtype'=>'switch',
         'default'=>0,
         'help'=>$this->_translate(''),
         'caption'=>$this->_translate('Show id at end of string.'),
       ),
-      'extraSurveyNameInLanguage'=>array(
+      'extraSurveyNoToken'=>array(
         'types'=>'XT',
         'category'=>$this->_translate('Extra survey'),
         'sortorder'=>50, /* Own category */
-        'inputtype'=>'text',
-        'default'=>'',
-        'i18n'=>true,
-        'help'=>$this->_translate('Default to response (translated)'),
-        'caption'=>$this->_translate('Show response as'),
+        'inputtype'=>'switch',
+        'default'=>1,
+        'help'=>$this->_translate('Then relation is done only using response id and optionnal other field.'),
+        'caption'=>$this->_translate('Allow extra survey without token.'),
+      ),
+      'extraSurveyOtherField'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>60, /* Own category */
+        'inputtype'=>'textarea',
+        'default'=>"",
+        'expression'=>1,
+        'help'=>$this->_translate('One field by line, field must be a valid question code. Field and value are separated by colon (<code>:</code>), you can use Expressiona Manager in value.'),
+        'caption'=>$this->_translate('Other field for relation.'),
       ),
       'extraSurveyQuestionAllowDelete'=>array(
         'types'=>'XT',
         'category'=>$this->_translate('Extra survey'),
-        'sortorder'=>40, /* Own category */
+        'sortorder'=>70, /* Own category */
         'inputtype'=>'switch',
         'default'=>0,
         'help'=>$this->_translate("Add a button to delete inside modal box, this don't update default LimeSurvey behaviour."),
@@ -118,6 +127,17 @@ class questionExtraSurvey extends PluginBase
         'default'=>1,
         'help'=>$this->_translate(''),
         'caption'=>$this->_translate('Fill answer with question id only if submitted.'),
+      ),
+      'extraSurveyNameInLanguage'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>100, /* Own category */
+        'inputtype'=>'text',
+        'default'=>'',
+        'i18n'=>true,
+        'expression'=>1,
+        'help'=>$this->_translate('Default to response (translated)'),
+        'caption'=>$this->_translate('Show response as'),
       ),
     );
     if(method_exists($this->getEvent(),'append')) {
@@ -282,6 +302,10 @@ class questionExtraSurvey extends PluginBase
     $aQuestionAttributes=QuestionAttribute::model()->getQuestionAttributes($oEvent->get('qid'),Yii::app()->getLanguage());
     $surveyId=$oEvent->get('surveyId');
     if(isset($aQuestionAttributes['extraSurvey']) && trim($aQuestionAttributes['extraSurvey'])) {
+      $token = Yii::app()->getRequest()->getParam('token');
+      if(empty($token)) {
+        $token = !empty(Yii::app()->session['survey_$surveyId']['token']) ? Yii::app()->session['survey_$surveyId']['token'] : "";
+      }
       $thisSurvey=Survey::model()->findByPk($surveyId);
       $extraSurveyAttribute=trim($aQuestionAttributes['extraSurvey']);
       if(!ctype_digit($extraSurveyAttribute)) {
@@ -299,22 +323,27 @@ class questionExtraSurvey extends PluginBase
           $extraSurveyAttribute=$oLangSurvey->surveyls_survey_id;
       }
       $extraSurvey=Survey::model()->findByPk($extraSurveyAttribute);
+      $disableMessage = "";
       if(!$extraSurvey) {
-        $this->log(sprintf("Invalid survey %s for question %s",$extraSurveyAttribute,$oEvent->get('qid')),'warning');
-        return;
+        $disableMessage = sprintf($this->_translate("Invalid survey %s for question %s."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
       if($extraSurvey->active != "Y") {
-        $this->log(sprintf("Survey %s for question %s not activated",$extraSurveyAttribute,$oEvent->get('qid')),'warning');
-        return;
+        $disableMessage = sprintf($this->_translate("Survey %s for question %s not activated."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
-      if($this->_accessWithToken($thisSurvey) != $this->_accessWithToken($extraSurvey)) {
-        $this->log(sprintf("Survey %s and survey %s for question %s incompatible by token system",$surveyId,$extraSurveyAttribute,$oEvent->get('qid')),'warning');
-        return;
+      if(!$this->_accessWithToken($extraSurvey) && $this->_accessWithToken($extraSurvey)) {
+        $disableMessage = sprintf($this->_translate("Survey %s for question %s can not be used with a survey without tokens."),$extraSurveyAttribute,$oEvent->get('qid'));
+      }
+      if($this->_accessWithToken($extraSurvey) && $this->_accessWithToken($extraSurvey) && !$aQuestionAttributes['extraSurveyNoToken']) {
+        $disableMessage = sprintf($this->_translate("Survey %s for question %s are not token enable survey."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
       if($this->_accessWithToken($extraSurvey)) {
-        $this->_validateToken($extraSurvey,$thisSurvey,Yii::app()->getRequest()->getParam('token'));
+        $this->_validateToken($extraSurvey,$thisSurvey,$token);
       }
-      $this->_setSurveyListForAnswer($extraSurvey->sid,$aQuestionAttributes,Yii::app()->getRequest()->getParam('token'));
+      if($disableMessage) {
+        $oEvent->set("answers",CHtml::tag("div",array('class'=>'alert alert-warning'),$disableMessage));
+        return;
+      }
+      $this->_setSurveyListForAnswer($extraSurvey->sid,$aQuestionAttributes,$token);
     }
   }
 
@@ -452,6 +481,10 @@ class questionExtraSurvey extends PluginBase
     if(in_array($oQuestion->type,array("T","S"))) {
       $inputName = $oQuestion->sid."X".$oQuestion->gid."X".$oQuestion->qid;
     }
+    if(Survey::model()->findByPk($surveyId)->active != "Y") {
+      return "<p class='alert alert-warning'>".sprintf($this->_translate("Related Survey is not activate, related response deactivated."),$surveyId)."</p>";
+    }
+
     $qCodeText=trim($aAttributes['extraSurveyQuestion']);
     $showId=trim($aAttributes['extraSurveyShowId']);
     $qCodeSrid=trim($aAttributes['extraSurveyQuestionLink']);
@@ -487,19 +520,21 @@ class questionExtraSurvey extends PluginBase
    * Set the answwer and other parameters for the system
    * @param int $surveyId
    * @param string $srid
-   * @param string $token
-   * @param string $qCodeText question code to be used for link
+   * @param null|string $token
+   * @param null|string $qCodeText question code to be used for link
    * @param boolean $bShowId or not
-   * @param boolean $qCodeSrid
+   * @param null|string $qCodeSrid
+   * @param null|string[] $aOtherField
    * @return void
    */
-  private function _getPreviousResponse($surveyId,$srid,$token,$qCodeText,$showId=false,$qCodeSrid=null,$qCodeEmpty=false) {
+  private function _getPreviousResponse($surveyId,$srid,$token = null,$qCodeText=null,$showId=false,$qCodeSrid=null) {
     $aSelect=array(
       'id',
-      'token',
       'submitdate'
     );
-
+    if($token) {
+      $aSelect[] = 'token';
+    }
     /* Find the question code */
     $oQuestionText=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$qCodeText));
     $qCodeText = null;
@@ -534,9 +569,9 @@ class questionExtraSurvey extends PluginBase
     if($oResponses) {
       foreach($oResponses as $oResponse){
         $aResponses[$oResponse->id]=array(
-          'token'=>$oResponse->token,
           'submitdate'=>$oResponse->submitdate,
         );
+        /* Todo : check token related survey */
         $aResponses[$oResponse->id]['text'] = "";
         if($showId) {
           $aResponses[$oResponse->id]['text'] .= \CHtml::tag('span',array('class'=>'badge'),$oResponse->id);
