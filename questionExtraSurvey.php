@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.1.4
+ * @version 1.2.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -73,6 +73,15 @@ class questionExtraSurvey extends PluginBase
         'help'=>$this->_translate('The question code in the extra survey to be used. If empty : only token or optionnal fields was used for the link.'),
         'caption'=>$this->_translate('Question for response id'),
       ),
+      'extraSurveyQuestionLinkUse'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>20, /* Own category */
+        'inputtype'=>'switch',
+        'default'=>1,
+        'help'=>$this->_translate('Choose if you want only related to current response. If survey use token persistence and allow edition, not needed and id can be different after import an old response database.'),
+        'caption'=>$this->_translate('Get only response related to current response id.'),
+      ),
       'extraSurveyQuestion'=>array(
         'types'=>'XT',
         'category'=>$this->_translate('Extra survey'),
@@ -98,8 +107,8 @@ class questionExtraSurvey extends PluginBase
         'inputtype'=>'textarea',
         'default'=>"",
         'expression'=>1,
-        'help'=>$this->_translate('One field by line, field must be a valid question code. Field and value are separated by colon (<code>:</code>), you can use Expressiona Manager in value.'),
-        'caption'=>$this->_translate('Other field for relation.'),
+        'help'=>$this->_translate('One field by line, field must be a valid question code (single question only). Field and value are separated by colon (<code>:</code>), you can use Expressiona Manager in value.'),
+        'caption'=>$this->_translate('Other question fields for relation.'),
       ),
       'extraSurveyQuestionAllowDelete'=>array(
         'types'=>'XT',
@@ -321,10 +330,10 @@ class questionExtraSurvey extends PluginBase
       if($extraSurvey->active != "Y") {
         $disableMessage = sprintf($this->_translate("Survey %s for question %s not activated."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
-      if(!$this->_accessWithToken($extraSurvey) && $this->_accessWithToken($extraSurvey)) {
+      if(!$this->_accessWithToken($thisSurvey) && $this->_accessWithToken($extraSurvey)) {
         $disableMessage = sprintf($this->_translate("Survey %s for question %s can not be used with a survey without tokens."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
-      if($this->_accessWithToken($extraSurvey) && !$this->_accessWithToken($extraSurvey)) {
+      if($this->_accessWithToken($thisSurvey) && !$this->_accessWithToken($extraSurvey)) {
         $disableMessage = sprintf($this->_translate("Survey %s for question %s are not token enable survey."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
       if($this->_accessWithToken($extraSurvey)) {
@@ -376,7 +385,7 @@ class questionExtraSurvey extends PluginBase
 
   /**
    * Set the answwer and other parameters for the system
-   * @param int $surveyId
+   * @param int $surveyId for answers
    * @param array $qAttributes
    * @param string $token
    * @return void
@@ -384,12 +393,12 @@ class questionExtraSurvey extends PluginBase
   private function _setSurveyListForAnswer($surveyId,$aQuestionAttributes,$token=null) {
     $oEvent=$this->getEvent();
     $qid = $oEvent->get('qid');
-
+    $currentSurveyId = $oEvent->get('surveyId');
     $oEvent->set("class",$oEvent->get("class")." questionExtraSurvey");
-    if(!$token) {
-      $token=isset($_SESSION['survey_'.$oEvent->get('surveyId')]['token']) ? $_SESSION['survey_'.$oEvent->get('surveyId')]['token'] : null;
+    if(!$token && $this->_accessWithToken(Survey::model()->findByPk($currentSurveyId))) {
+      $token = (!empty(Yii::app()->session["survey_{$currentSurveyId}"]['token'])) ? Yii::app()->session["survey_{$currentSurveyId}"]['token'] : null;
     }
-    $srid=isset($_SESSION['survey_'.$oEvent->get('surveyId')]['srid']) ? $_SESSION['survey_'.$oEvent->get('surveyId')]['srid'] : null;
+    $srid = !empty(Yii::app()->session["survey_{$currentSurveyId}"]['srid']) ? Yii::app()->session["survey_{$currentSurveyId}"]['srid'] : null;
     $this->_setOtherField($qid,$aQuestionAttributes['extraSurveyOtherField'],$surveyId);
     Yii::setPathOfAlias('questionExtraSurvey',dirname(__FILE__));
     Yii::app()->clientScript->addPackage( 'questionExtraSurveyManage', array(
@@ -482,10 +491,13 @@ class questionExtraSurvey extends PluginBase
 
     $qCodeText=trim($aAttributes['extraSurveyQuestion']);
     $showId=trim($aAttributes['extraSurveyShowId']);
-    $qCodeSrid=trim($aAttributes['extraSurveyQuestionLink']);
+    $qCodeSrid = $qCodeSridUsed = trim($aAttributes['extraSurveyQuestionLink']);
     $setSubmittedSrid=trim($aAttributes['extraSurveySetSurveySubmittedOnly']);
     $extraSurveyOtherField=$this->_getOtherField($qid);
-    $aResponses=$this->_getPreviousResponse($surveyId,$srid,$token,$qCodeText,$showId,$qCodeSrid);
+    if(!$aAttributes['extraSurveyQuestionLinkUse']) {
+      $qCodeSridUsed = null;
+    }
+    $aResponses=$this->_getPreviousResponse($surveyId,$srid,$token,$qCodeText,$showId,$qCodeSridUsed,$extraSurveyOtherField);
     $newUrlParam=array(
       'sid' =>$surveyId,
       'extrasurveyqid' => $qid,
@@ -495,6 +507,11 @@ class questionExtraSurvey extends PluginBase
     );
     if(!empty($qCodeSrid)) {
       $newUrlParam[$qCodeSrid]=$srid;
+    }
+    if(!empty($extraSurveyOtherField)) {
+      foreach($extraSurveyOtherField as $key=>$value) {
+        $newUrlParam[$key]=$value;
+      }
     }
     $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
     $renderData=array(
@@ -520,10 +537,10 @@ class questionExtraSurvey extends PluginBase
    * @param null|string $qCodeText question code to be used for link
    * @param boolean $bShowId or not
    * @param null|string $qCodeSrid
-   * @param null|string[] $aOtherField
+   * @param null|string[] $aOtherFields
    * @return void
    */
-  private function _getPreviousResponse($surveyId,$srid,$token = null,$qCodeText=null,$showId=false,$qCodeSrid=null) {
+  private function _getPreviousResponse($surveyId,$srid,$token = null,$qCodeText=null,$showId=false,$qCodeSrid=null,$aOtherFields = array()) {
     $aSelect=array(
       'id',
       'submitdate'
@@ -554,6 +571,15 @@ class questionExtraSurvey extends PluginBase
       if($oQuestionSrid && in_array($oQuestionSrid->type,array("T","S","N")) ) {
         $qCodeSrid = "{$oQuestionSrid->sid}X{$oQuestionSrid->gid}X{$oQuestionSrid->qid}";
         $oCriteria->compare(Yii::app()->db->quoteColumnName($qCodeSrid),$srid);
+      }
+    }
+    if(!empty($aOtherFields)) {
+      foreach($aOtherFields as $questionCode => $value) {
+        $oQuestionOther=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$questionCode));
+        if($oQuestionOther && in_array($oQuestionOther->type,array("5","D","G","I","L","N","O","S","T","U","X","Y")) ) {
+          $qCode = "{$oQuestionOther->sid}X{$oQuestionOther->gid}X{$oQuestionOther->qid}";
+          $oCriteria->compare(Yii::app()->db->quoteColumnName($qCode),$value);
+        }
       }
     }
     if(Survey::model()->findByPk($surveyId)->datestamp == "Y") {
@@ -745,7 +771,18 @@ class questionExtraSurvey extends PluginBase
    */
   private function _setOtherField($qid,$otherField,$surveyId)
   {
-    Yii::app()->getSession()->add("questionExtraOtherField{$qid}",null);
+    $aOtherFieldsLines = preg_split('/\r\n|\r|\n/',$otherField, -1, PREG_SPLIT_NO_EMPTY);
+    $aOtherFields = array();
+    foreach($aOtherFieldsLines as $otherFieldLine) {
+      if(!strpos($otherFieldLine,":")) {
+        continue; // Invalid line
+      }
+      $key = substr($otherFieldLine,0,strpos($otherFieldLine,":"));
+      $value = substr($otherFieldLine,strpos($otherFieldLine,":")+1);
+      $value = self::_EMProcessString($value);
+      $aOtherFields[$key] = $value;
+    }
+    Yii::app()->getSession()->add("questionExtraOtherField{$qid}",$aOtherFields);
   }
 
   /**
@@ -758,7 +795,27 @@ class questionExtraSurvey extends PluginBase
     return Yii::app()->getSession()->get("questionExtraOtherField{$qid}",null);
   }
 
-  /** Common for a lot of plugin, helper for compatibility */
+  /*******************************************************
+   * Common for a lot of plugin, helper for compatibility
+   *******************************************************/
+
+  /**
+   * Process a string via expression manager (static way) anhd API independant
+   * @param string $string
+   * @param boolean $static
+   * @return string
+   */
+  private static function _EMProcessString($string,$static = true)
+  {
+    $replacementFields=array();
+    if(intval(Yii::app()->getConfig('versionnumber'))<3) {
+      return \LimeExpressionManager::ProcessString($string, null, $replacementFields, false, 3, 0, false, false, $static);
+    }
+    if(version_compare(Yii::app()->getConfig('versionnumber'),"3.6.2","<")) {
+      return \LimeExpressionManager::ProcessString($string, null, $replacementFields, 3, 0, false, false, $static);
+    }
+    return \LimeExpressionManager::ProcessStepString($string, $static, 3, $replacementFields);
+  }
 
   /**
    * get translation
