@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.2.0
+ * @version 1.3.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -333,8 +333,8 @@ class questionExtraSurvey extends PluginBase
       if(!$this->_accessWithToken($thisSurvey) && $this->_accessWithToken($extraSurvey)) {
         $disableMessage = sprintf($this->_translate("Survey %s for question %s can not be used with a survey without tokens."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
-      if($this->_accessWithToken($thisSurvey) && !$this->_accessWithToken($extraSurvey)) {
-        $disableMessage = sprintf($this->_translate("Survey %s for question %s are not token enable survey."),$extraSurveyAttribute,$oEvent->get('qid'));
+      if($this->_accessWithToken($thisSurvey) && $extraSurvey->anonymized == "Y") {
+        $disableMessage = sprintf($this->_translate("Survey %s for question %s need to be not anonymized."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
       if($this->_accessWithToken($extraSurvey)) {
         $this->_validateToken($extraSurvey,$thisSurvey,$token);
