@@ -76,11 +76,20 @@ class questionExtraSurvey extends PluginBase
       'extraSurveyQuestionLinkUse'=>array(
         'types'=>'XT',
         'category'=>$this->_translate('Extra survey'),
-        'sortorder'=>20, /* Own category */
+        'sortorder'=>25, /* Own category */
         'inputtype'=>'switch',
         'default'=>1,
         'help'=>$this->_translate('Choose if you want only related to current response. If survey use token persistence and allow edition, not needed and id can be different after import an old response database.'),
         'caption'=>$this->_translate('Get only response related to current response id.'),
+      ),
+      'extraSurveyResponseListAndManage'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>28, /* Own category */
+        'inputtype'=>'switch',
+        'default'=>1,
+        'help'=>$this->_translate('If you have responseListAndManage, the response list can be found using the group of current token.'),
+        'caption'=>$this->_translate('Use responseListAndManage group for token.'),
       ),
       'extraSurveyQuestion'=>array(
         'types'=>'XT',
@@ -90,15 +99,6 @@ class questionExtraSurvey extends PluginBase
         'default'=>'',
         'help'=>$this->_translate('This can be text question type, single choice question type or equation question type.'),
         'caption'=>$this->_translate('Question code for listing.'),
-      ),
-      'extraSurveyShowId'=>array(
-        'types'=>'XT',
-        'category'=>$this->_translate('Extra survey'),
-        'sortorder'=>40, /* Own category */
-        'inputtype'=>'switch',
-        'default'=>0,
-        'help'=>$this->_translate(''),
-        'caption'=>$this->_translate('Show id at end of string.'),
       ),
       'extraSurveyOtherField'=>array(
         'types'=>'XT',
@@ -127,6 +127,15 @@ class questionExtraSurvey extends PluginBase
         'default'=>1,
         'help'=>$this->_translate(''),
         'caption'=>$this->_translate('Fill answer with question id only if submitted.'),
+      ),
+      'extraSurveyShowId'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>90, /* Own category */
+        'inputtype'=>'switch',
+        'default'=>0,
+        'help'=>$this->_translate(''),
+        'caption'=>$this->_translate('Show id at end of string.'),
       ),
       'extraSurveyNameInLanguage'=>array(
         'types'=>'XT',
@@ -270,6 +279,7 @@ class questionExtraSurvey extends PluginBase
   }
   /**
    * Recall good survey
+   * And need to reset partially extra survey
    */
   public function beforeLoadResponse() {
     if(!$this->qid){
@@ -277,13 +287,15 @@ class questionExtraSurvey extends PluginBase
     }
     $iSurveyId=$this->getEvent()->get('surveyId');
     if(Yii::app()->getRequest()->getParam('extrasurveysrid')=='new') {
-      //~ $this->getEvent()->set('response',false);
+      $this->getEvent()->set('response',false);
       return;
     }
     if(Yii::app()->getRequest()->getParam('extrasurveysrid')) {
-      $oResponse=$this->_getResponse($this->getEvent()->get('surveyId'),Yii::app()->getRequest()->getParam('extrasurveysrid'));
+      $oResponse=$this->_getResponse($iSurveyId,Yii::app()->getRequest()->getParam('extrasurveysrid'));
       if($oResponse->submitdate) {
-        $oResponse->submitdate=null;
+        if(Survey::model()->findByPk($iSurveyId)->alloweditaftercompletion != "Y") {
+          $oResponse->submitdate=null;
+        }
         $oResponse->lastpage=0;
         $oResponse->save();
       }
@@ -493,11 +505,12 @@ class questionExtraSurvey extends PluginBase
     $showId=trim($aAttributes['extraSurveyShowId']);
     $qCodeSrid = $qCodeSridUsed = trim($aAttributes['extraSurveyQuestionLink']);
     $setSubmittedSrid=trim($aAttributes['extraSurveySetSurveySubmittedOnly']);
+    $relatedTokens = boolval($aAttributes['extraSurveyResponseListAndManage']);
     $extraSurveyOtherField=$this->_getOtherField($qid);
     if(!$aAttributes['extraSurveyQuestionLinkUse']) {
       $qCodeSridUsed = null;
     }
-    $aResponses=$this->_getPreviousResponse($surveyId,$srid,$token,$qCodeText,$showId,$qCodeSridUsed,$extraSurveyOtherField);
+    $aResponses=$this->_getPreviousResponse($surveyId,$srid,$token,$qCodeText,$showId,$qCodeSridUsed,$extraSurveyOtherField,$relatedTokens);
     $newUrlParam=array(
       'sid' =>$surveyId,
       'extrasurveyqid' => $qid,
@@ -540,7 +553,7 @@ class questionExtraSurvey extends PluginBase
    * @param null|string[] $aOtherFields
    * @return void
    */
-  private function _getPreviousResponse($surveyId,$srid,$token = null,$qCodeText=null,$showId=false,$qCodeSrid=null,$aOtherFields = array()) {
+  private function _getPreviousResponse($surveyId,$srid,$token = null,$qCodeText=null,$showId=false,$qCodeSrid=null,$aOtherFields = array(),$relatedTokens = true) {
     $aSelect=array(
       'id',
       'submitdate'
@@ -564,7 +577,11 @@ class questionExtraSurvey extends PluginBase
       $oCriteria->addCondition("$qQuotesCodeText IS NOT NULL AND $qQuotesCodeText != ''");
     }
     if($token) {
-      $oCriteria->addInCondition("token",$this->_getTokensList($surveyId,$token));
+      $tokens = array($token=>$token);
+      if($relatedTokens) {
+        $tokens = $this->_getTokensList($surveyId,$token);
+      }
+      $oCriteria->addInCondition("token",$tokens);
     }
     if($qCodeSrid && $srid) {
       $oQuestionSrid=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$qCodeSrid));
@@ -721,6 +738,13 @@ class questionExtraSurvey extends PluginBase
     return Survey::model()->hasTokens($iSurvey);
   }
 
+  /**
+   * Return the list of token related by responseListAndManage
+   * @todo : move this to a responseListAndManage helper
+   * @param integer $surveyId
+   * @param string $token
+   * @return string[]
+   */
   private function _getTokensList($surveyId,$token)
   {
     $tokensList = array($token=>$token);
