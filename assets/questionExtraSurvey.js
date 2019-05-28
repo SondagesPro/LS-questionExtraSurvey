@@ -74,23 +74,11 @@ function updateHeightModalExtraSurvey(modal) {
     var modalHeader=$(modal).find(".modal-header").outerHeight();
     var modalFooter=$(modal).find(".modal-footer").outerHeight();
     var finalHeight=Math.max(400,$(window).height()-(navbarFixed+modalHeader+modalFooter+28));// Not less than 150px
-    console.warn([
-      navbarFixed,
-      modalHeader,
-      modalFooter,
-      finalHeight,
-    ]);
-    console.warn([
-      $(modal).find(".modal-dialog"),
-      $(modal).find(".modal-body"),
-      $(modal).find(".modal-body iframe"),
-    ]);
     $(modal).find(".modal-dialog").css("margin-top",navbarFixed+4);
     $(modal).find(".modal-body").css("height",finalHeight);
     $(modal).find(".modal-body iframe").css("height",finalHeight);
 }
 $(document).on('extrasurveyframe:on',function(event,data) {
-  console.warn([event,data]);
   $("#modal-questionExtraSurvey .modal-footer button[data-action]").each(function(){
     $(this).prop('disabled',$("#extra-survey-iframe").contents().find("form#limesurvey button:submit[value='"+$(this).data('action')+"']").length < 1);
     if($("#extra-survey-iframe").contents().find(".completed-text").length) {
