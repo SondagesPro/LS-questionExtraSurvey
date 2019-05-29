@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.3.0
+ * @version 1.3.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -750,6 +750,9 @@ class questionExtraSurvey extends PluginBase
     $tokensList = array($token=>$token);
     $oPluginResponseListAndManage = Plugin::model()->find("name = :name",array(":name"=>'responseListAndManage'));
     if(empty($oPluginResponseListAndManage) || !$oPluginResponseListAndManage->active) {
+      return $tokensList;
+    }
+    if(!$this->_hasToken($surveyId)) {
       return $tokensList;
     }
     $oPluginResponseListAndManage = PluginSetting::model()->find(
