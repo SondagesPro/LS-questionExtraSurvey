@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.3.1
+ * @version 1.3.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -339,16 +339,16 @@ class questionExtraSurvey extends PluginBase
       if(!$extraSurvey) {
         $disableMessage = sprintf($this->_translate("Invalid survey %s for question %s."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
-      if($extraSurvey->active != "Y") {
+      if(!$disableMessage && $extraSurvey->active != "Y") {
         $disableMessage = sprintf($this->_translate("Survey %s for question %s not activated."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
-      if(!$this->_accessWithToken($thisSurvey) && $this->_accessWithToken($extraSurvey)) {
+      if(!$disableMessage && !$this->_accessWithToken($thisSurvey) && $this->_accessWithToken($extraSurvey)) {
         $disableMessage = sprintf($this->_translate("Survey %s for question %s can not be used with a survey without tokens."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
-      if($this->_accessWithToken($thisSurvey) && $extraSurvey->anonymized == "Y") {
+      if(!$disableMessage && $this->_accessWithToken($thisSurvey) && $extraSurvey->anonymized == "Y") {
         $disableMessage = sprintf($this->_translate("Survey %s for question %s need to be not anonymized."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
-      if($this->_accessWithToken($extraSurvey)) {
+      if(!$disableMessage && $this->_accessWithToken($extraSurvey)) {
         $this->_validateToken($extraSurvey,$thisSurvey,$token);
       }
       if($disableMessage) {
