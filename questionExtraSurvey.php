@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.3.2
+ * @version 1.3.3
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -116,7 +116,7 @@ class questionExtraSurvey extends PluginBase
         'sortorder'=>70, /* Own category */
         'inputtype'=>'switch',
         'default'=>0,
-        'help'=>$this->_translate("Add a button to delete inside modal box, this don't update default LimeSurvey behaviour."),
+        'help'=>$this->_translate("Add a button to delete inside modal box, this allow user to really delete the reponse."),
         'caption'=>$this->_translate('Allow delete response.'),
       ),
       'extraSurveySetSurveySubmittedOnly'=>array(
@@ -174,38 +174,25 @@ class questionExtraSurvey extends PluginBase
         $aSessionExtraSurvey=array();
     }
     $currentSrid = isset($_SESSION['survey_'.$iSurveyId]['srid']) ? $_SESSION['survey_'.$iSurveyId]['srid'] : null;
-
-    if(Yii::app()->getRequest()->getQuery('extrasurveysrid') && Yii::app()->getRequest()->getParam('extrasurveyqid')) {
-      $title=$oSurvey->getLocalizedTitle(); // @todo : get default lang title
-      /* search if it's a related survey */
-      $oAttributeExtraSurvey=QuestionAttribute::model()->find('attribute=:attribute AND (value=:sid OR value=:title)  AND qid=:qid',array(
-        ':attribute' => 'extraSurvey',
-        ':sid' => $iSurveyId,
-        ':title' => $title,
-        ':qid' => Yii::app()->getRequest()->getParam('extrasurveyqid'),
-      ));
-      
-      /* Validate if usage of extraSurvey is OK here with current qid */
-      if($oAttributeExtraSurvey) {
-        $aSessionExtraSurvey[$iSurveyId]=$oAttributeExtraSurvey->qid;
-        $currentlang = Yii::app()->getLanguage();
-        //~ killSurveySession($iSurveyId);
-        SetSurveyLanguage($iSurveyId, $currentlang); // frontend_helper function
-        $this->qid = Yii::app()->getRequest()->getParam('extrasurveyqid');
-        $aSessionExtraSurvey[$iSurveyId]=$oAttributeExtraSurvey->qid;
-        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
-      }
-    }
-    if(!isset($aSessionExtraSurvey[$iSurveyId])) {
-      /* Quit if we are not in survey inside surey system */
-      return;
-    }
-    if(version_compare(Yii::app()->getConfig('versionnumber'),"3",">=")) {
-      Template::model()->getInstance(null, $iSurveyId)->oOptions->ajaxmode = 'off';
-    }
-    if((Yii::app()->getRequest()->getParam('move')=='clearall' || Yii::app()->getRequest()->getParam('clearall'))) {
+    if((Yii::app()->getRequest()->getParam('move')=='delete')) {
       if(isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid) {
-        $oResponse=Response::model($iSurveyId)->find("id = :srid",array(":srid"=>$_SESSION['survey_'.$iSurveyId]['srid']));
+        $qid = $aSessionExtraSurvey[$iSurveyId];
+        /* check if qid with this survey allow delete */
+        $oAttributeExtraSurvey=QuestionAttribute::model()->find('attribute=:attribute AND qid=:qid',array(
+          ':attribute' => 'extraSurvey',
+          ':qid' => $qid,
+        ));
+        if(empty($oAttributeExtraSurvey) || ($oAttributeExtraSurvey->value != $iSurveyId && $oAttributeExtraSurvey->value != $title)) {
+          return;
+        }
+        $oAttributeExtraSurveyDelete=QuestionAttribute::model()->find('attribute=:attribute AND qid=:qid',array(
+          ':attribute' => 'extraSurveyQuestionAllowDelete',
+          ':qid' => $qid,
+        ));
+        if(empty($oAttributeExtraSurveyDelete) || empty($oAttributeExtraSurveyDelete->value)) {
+          return;
+        }
+        $oResponse=Response::model($iSurveyId)->find("id = :srid",array(":srid"=>$currentSrid));
         if($oResponse) {
           $oResponse->delete();
         }
@@ -222,6 +209,34 @@ class questionExtraSurvey extends PluginBase
         $renderMessage->render(sprintf($this->_translate("%s deleted, you can close this window."),$reponseName));
       }
     }
+
+    if(Yii::app()->getRequest()->getQuery('extrasurveysrid') && Yii::app()->getRequest()->getParam('extrasurveyqid')) {
+      $title=$oSurvey->getLocalizedTitle(); // @todo : get default lang title
+      /* search if it's a related survey */
+      $oAttributeExtraSurvey=QuestionAttribute::model()->find('attribute=:attribute AND qid=:qid',array(
+        ':attribute' => 'extraSurvey',
+        ':qid' => Yii::app()->getRequest()->getParam('extrasurveyqid'),
+      ));
+      
+      /* Validate if usage of extraSurvey is OK here with current qid */
+      if($oAttributeExtraSurvey && ($oAttributeExtraSurvey->value == $iSurveyId || $oAttributeExtraSurvey->value == $title)) {
+        $aSessionExtraSurvey[$iSurveyId]=$oAttributeExtraSurvey->qid;
+        $currentlang = Yii::app()->getLanguage();
+        //~ killSurveySession($iSurveyId);
+        SetSurveyLanguage($iSurveyId, $currentlang); // frontend_helper function
+        $this->qid = Yii::app()->getRequest()->getParam('extrasurveyqid');
+        $aSessionExtraSurvey[$iSurveyId]=$oAttributeExtraSurvey->qid;
+        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+      }
+    }
+    if(!isset($aSessionExtraSurvey[$iSurveyId])) {
+      /* Quit if we are not in survey inside surey system */
+      return;
+    }
+    if(version_compare(Yii::app()->getConfig('versionnumber'),"3",">=")) {
+      Template::model()->getInstance(null, $iSurveyId)->oOptions->ajaxmode = 'off';
+    }
+
     if((Yii::app()->getRequest()->getParam('move')=='saveall' || Yii::app()->getRequest()->getParam('saveall'))) {
       if(isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid ) {
         $oSurvey = Survey::model()->findByPk($iSurveyId);
@@ -378,18 +393,14 @@ class questionExtraSurvey extends PluginBase
       case 'update':
         $title=Survey::model()->findByPk($surveyId)->getLocalizedTitle();
         /* search if it's a related survey */
-        $oAttributeExtraSurvey=QuestionAttribute::model()->find('attribute=:attribute AND (value=:sid OR value=:title)  AND qid=:qid',array(
+        $oAttributeExtraSurvey=QuestionAttribute::model()->find('attribute=:attribute AND qid=:qid',array(
           ':attribute' => 'extraSurvey',
-          ':sid' => $surveyId,
-          ':title' => $title,
-          ':qid' => Yii::app()->getRequest()->getParam('qid'),
+          ':qid' => $qid,
         ));
-        if($oAttributeExtraSurvey) {
+        if($oAttributeExtraSurvey && ($oAttributeExtraSurvey->value == $surveyId || $oAttributeExtraSurvey->value == $title)) {
           echo $this->_getHtmlPreviousResponse($surveyId,$srid,$qid,$token,$lang);
           break;
         }
-      case 'validate':
-        break;
       default:
         // Nothing to do (except log error)
     }
@@ -431,7 +442,7 @@ class questionExtraSurvey extends PluginBase
     $reponseName = empty($aQuestionAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aQuestionAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
     $modalParams = array(
       'buttons' => array(
-        'clearall' => (bool)$aQuestionAttributes['extraSurveyQuestionAllowDelete'],
+        'delete' => (bool)$aQuestionAttributes['extraSurveyQuestionAllowDelete'],
         'saveall' => ($oSurveyFrame->allowsave == "Y"),
         'moveprevious' => ($oSurveyFrame->allowprev == "Y" && $oSurveyFrame->format != "A"),
         'movenext' => ($oSurveyFrame->format != "A"),
@@ -526,6 +537,7 @@ class questionExtraSurvey extends PluginBase
         $newUrlParam[$key]=$value;
       }
     }
+
     $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
     $renderData=array(
       'aResponses'=>$aResponses,
@@ -841,7 +853,7 @@ class questionExtraSurvey extends PluginBase
     if(version_compare(Yii::app()->getConfig('versionnumber'),"3.6.2","<")) {
       return \LimeExpressionManager::ProcessString($string, null, $replacementFields, 3, 0, false, false, $static);
     }
-    return \LimeExpressionManager::ProcessStepString($string, $static, 3, $replacementFields);
+    return \LimeExpressionManager::ProcessStepString($string, $replacementFields, 3, $static);
   }
 
   /**

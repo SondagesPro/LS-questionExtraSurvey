@@ -1,5 +1,5 @@
 <!-- Bootstrap Modal Survey -->
-<div id="modal-questionExtraSurvey" class="modal"  tabindex="-1" role="dialog">
+<div id="modal-questionExtraSurvey" class="modal modal-questionExtraSurvey"  tabindex="-1" role="dialog">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
@@ -12,7 +12,7 @@
         <?php
           echo CHtml::htmlButton($language['Close'],array('type'=>'button','class'=>"btn btn-warning btn-close",'data-dismiss'=>"modal"));
           if(!empty($language['Delete'])) {
-            echo CHtml::htmlButton($language['Delete'],array('type'=>'button','class'=>"btn btn-danger btn-clearall",'data-action'=>"clearall",'disabled'=>true));
+            echo CHtml::htmlButton($language['Delete'],array('type'=>'button','class'=>"btn btn-danger btn-delete",'data-action'=>"delete",'disabled'=>false));
           }
           if(!empty($language['Previous'])) {
             echo CHtml::htmlButton($language['Previous'],array('type'=>'button','class'=>"btn btn-default btn-moveprevious",'data-action'=>"moveprevious",'disabled'=>true));
