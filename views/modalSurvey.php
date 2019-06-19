@@ -15,7 +15,7 @@
             echo CHtml::htmlButton($language['Delete'],array('type'=>'button','class'=>"btn btn-danger btn-delete",'data-action'=>"delete",'disabled'=>false));
           }
           if(!empty($language['Previous'])) {
-            echo CHtml::htmlButton($language['Previous'],array('type'=>'button','class'=>"btn btn-default btn-moveprevious",'data-action'=>"moveprevious",'disabled'=>true));
+            echo CHtml::htmlButton($language['Previous'],array('type'=>'button','class'=>"btn btn-default btn-moveprevious",'data-action'=>"moveprev",'disabled'=>true));
           }
           if(!empty($language['Save'])) {
             echo CHtml::htmlButton($language['Save'],array('type'=>'button','class'=>"btn btn-info btn-saveall",'data-action'=>"saveall",'disabled'=>true));
