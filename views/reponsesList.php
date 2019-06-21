@@ -56,3 +56,7 @@ foreach($aResponses as $id => $aResponse) {
     $("#answer<?php echo $inputName?>").trigger("keyup");
   </script>
 <?php }?>
+<?php foreach($questionExtraSurveyReset as $key=>$value) {
+    echo \CHtml::hiddenField("questionExtraSurveyReset[{$key}]",$value,array('aria-hidden'=>true));
+}
+?>

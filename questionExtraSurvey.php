@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.3.4
+ * @version 1.3.5
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -173,6 +173,8 @@ class questionExtraSurvey extends PluginBase
     if(empty($aSessionExtraSurvey)) {
         $aSessionExtraSurvey=array();
     }
+    $this->_resetEMIfNeeded($iSurveyId);
+
     $currentSrid = isset($_SESSION['survey_'.$iSurveyId]['srid']) ? $_SESSION['survey_'.$iSurveyId]['srid'] : null;
     if((Yii::app()->getRequest()->getParam('move')=='delete')) {
       if(isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid) {
@@ -229,6 +231,7 @@ class questionExtraSurvey extends PluginBase
         Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
       }
     }
+    
     if(!isset($aSessionExtraSurvey[$iSurveyId])) {
       /* Quit if we are not in survey inside surey system */
       return;
@@ -267,7 +270,6 @@ class questionExtraSurvey extends PluginBase
       }
     }
     $this->_registerExtraSurveyScript();
-
   }
 
   /**
@@ -398,7 +400,7 @@ class questionExtraSurvey extends PluginBase
           ':qid' => $qid,
         ));
         if($oAttributeExtraSurvey && ($oAttributeExtraSurvey->value == $surveyId || $oAttributeExtraSurvey->value == $title)) {
-          echo $this->_getHtmlPreviousResponse($surveyId,$srid,$qid,$token,$lang);
+          echo $this->_getHtmlPreviousResponse($surveyId,$srid,$qid,$token,$lang,true);
           break;
         }
       default:
@@ -498,7 +500,7 @@ class questionExtraSurvey extends PluginBase
    * @param null|string $lang
    * @return string
    */
-  private function _getHtmlPreviousResponse($surveyId,$srid,$qid,$token=null,$lang=null) {
+  private function _getHtmlPreviousResponse($surveyId,$srid,$qid,$token=null,$lang=null, $reloaded=false) {
     if($lang) {
       Yii::app()->setLanguage($lang);
     }
@@ -537,7 +539,9 @@ class questionExtraSurvey extends PluginBase
         $newUrlParam[$key]=$value;
       }
     }
-
+    /* Need some information on current Srid */
+    $currentSusrveyId = $oQuestion->sid;
+    $currentStep = isset($_SESSION['survey_'.$currentSusrveyId]) ? $_SESSION['survey_'.$currentSusrveyId]['step'] : null;
     $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
     $renderData=array(
       'aResponses'=>$aResponses,
@@ -549,6 +553,11 @@ class questionExtraSurvey extends PluginBase
       'setSubmittedSrid'=>$setSubmittedSrid,
       'language' => array(
         'createNewreponse'=>sprintf($this->_translate("Add a new %s"),$reponseName),
+      ),
+      'questionExtraSurveyReset'=>array(
+        'surveyId'=> $currentSusrveyId,
+        'step' => $currentStep,
+        'reloaded' => $reloaded,
       ),
     );
     return Yii::app()->controller->renderPartial("questionExtraSurvey.views.reponsesList",$renderData,1);
@@ -832,6 +841,38 @@ class questionExtraSurvey extends PluginBase
   private function _getOtherField($qid)
   {
     return Yii::app()->getSession()->get("questionExtraOtherField{$qid}",null);
+  }
+
+  /**
+   * Reset current survey if EM sid updated
+   * Needed for full index
+   */
+  private function _resetEMIfNeeded($surveyId){
+    $questionExtraSurveyReset = Yii::app()->getRequest()->getPost('questionExtraSurveyReset');
+    if(empty($questionExtraSurveyReset)) {
+      return;
+    }
+    if(empty($questionExtraSurveyReset['reloaded'])) {
+      // Can log it
+      return;
+    }
+    if($questionExtraSurveyReset['surveyId'] != $surveyId) {
+      // throw Exceptioon ?
+      return;
+    }
+    if(!class_exists('\\reloadAnyResponse\\helpers\\reloadResponse')) {
+      if(Yii::app()->getConfig('debug') > 1) {
+        Throw new Exception("You must have reloadAnyResponse version 1.2.0 minimum");
+      }
+      return;
+    }
+    $step = $questionExtraSurveyReset['step'];
+    $srid = $_SESSION['survey_'.$surveyId]['srid'];
+    if(empty($srid) || empty($step)) {
+      return;
+    }
+    $reloadReponse = new \reloadAnyResponse\helpers\reloadResponse($surveyId, $srid);
+    $reloadReponse->startSurvey($step);
   }
 
   /*******************************************************
