@@ -173,6 +173,30 @@ class questionExtraSurvey extends PluginBase
     if(empty($aSessionExtraSurvey)) {
         $aSessionExtraSurvey=array();
     }
+    /* Fill session if it's in another survey */
+    if(Yii::app()->getRequest()->getQuery('extrasurveysrid') && Yii::app()->getRequest()->getParam('extrasurveyqid')) {
+      if($this->_validateQuestionExtraSurvey(Yii::app()->getRequest()->getParam('extrasurveyqid'),$iSurveyId)) {
+        $currentlang = Yii::app()->getLanguage();
+        //~ killSurveySession($iSurveyId);
+        SetSurveyLanguage($iSurveyId, $currentlang); // frontend_helper function
+        $this->qid = Yii::app()->getRequest()->getParam('extrasurveyqid');
+        $aSessionExtraSurvey[$iSurveyId]=Yii::app()->getRequest()->getParam('extrasurveyqid');
+        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+      }
+    }
+    if(Yii::app()->getRequest()->getPost('questionExtraSurveyQid')) {
+      if($this->_validateQuestionExtraSurvey(Yii::app()->getRequest()->getParam('questionExtraSurveyQid'),$iSurveyId)) {
+        $aSessionExtraSurvey[$iSurveyId]=Yii::app()->getRequest()->getPost('questionExtraSurveyQid');
+        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+      }
+    }
+    if(!isset($aSessionExtraSurvey[$iSurveyId])) {
+      /* Quit if we are not in survey inside surey system */
+      return;
+    }
+    if(version_compare(Yii::app()->getConfig('versionnumber'),"3",">=")) {
+      Template::model()->getInstance(null, $iSurveyId)->oOptions->ajaxmode = 'off';
+    }
     $this->_resetEMIfNeeded($iSurveyId);
 
     $currentSrid = isset($_SESSION['survey_'.$iSurveyId]['srid']) ? $_SESSION['survey_'.$iSurveyId]['srid'] : null;
@@ -210,34 +234,6 @@ class questionExtraSurvey extends PluginBase
         $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
         $renderMessage->render(sprintf($this->_translate("%s deleted, you can close this window."),$reponseName));
       }
-    }
-
-    if(Yii::app()->getRequest()->getQuery('extrasurveysrid') && Yii::app()->getRequest()->getParam('extrasurveyqid')) {
-      $title=$oSurvey->getLocalizedTitle(); // @todo : get default lang title
-      /* search if it's a related survey */
-      $oAttributeExtraSurvey=QuestionAttribute::model()->find('attribute=:attribute AND qid=:qid',array(
-        ':attribute' => 'extraSurvey',
-        ':qid' => Yii::app()->getRequest()->getParam('extrasurveyqid'),
-      ));
-      
-      /* Validate if usage of extraSurvey is OK here with current qid */
-      if($oAttributeExtraSurvey && ($oAttributeExtraSurvey->value == $iSurveyId || $oAttributeExtraSurvey->value == $title)) {
-        $aSessionExtraSurvey[$iSurveyId]=$oAttributeExtraSurvey->qid;
-        $currentlang = Yii::app()->getLanguage();
-        //~ killSurveySession($iSurveyId);
-        SetSurveyLanguage($iSurveyId, $currentlang); // frontend_helper function
-        $this->qid = Yii::app()->getRequest()->getParam('extrasurveyqid');
-        $aSessionExtraSurvey[$iSurveyId]=$oAttributeExtraSurvey->qid;
-        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
-      }
-    }
-    
-    if(!isset($aSessionExtraSurvey[$iSurveyId])) {
-      /* Quit if we are not in survey inside surey system */
-      return;
-    }
-    if(version_compare(Yii::app()->getConfig('versionnumber'),"3",">=")) {
-      Template::model()->getInstance(null, $iSurveyId)->oOptions->ajaxmode = 'off';
     }
 
     if((Yii::app()->getRequest()->getParam('move')=='saveall' || Yii::app()->getRequest()->getParam('saveall'))) {
@@ -279,20 +275,29 @@ class questionExtraSurvey extends PluginBase
     $iSurveyId = $this->event->get('surveyId');
     $currentSrid = $this->event->get('responseId');
     $aSessionExtraSurvey=Yii::app()->session["questionExtraSurvey"];
-    if(isset($aSessionExtraSurvey[$iSurveyId])) {
-      unset($aSessionExtraSurvey[$iSurveyId]);
-      Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
-      $script = "if(window.location != window.parent.location) {\n";
-      $script.= "  window.parent.$(window.parent.document).trigger('extrasurveyframe:autoclose');\n";
-      $script.= "}\n";
-      Yii::app()->getClientScript()->registerScript("questionExtraSurveyComplete",$script,CClientScript::POS_END);
-      if($currentSrid && Yii::getPathOfAlias('reloadAnyResponse')) {
-        \reloadAnyResponse\models\surveySession::model()->deleteByPk(array('sid'=>$iSurveyId,'srid'=>$currentSrid));
-      }
-      if($currentSrid && Yii::getPathOfAlias('renderMessage')) {
-        \renderMessage\messageHelper::renderAlert($this->_translate("Your responses was saved as complete, you can close this windows."));
+    if(Yii::app()->getRequest()->getPost('questionExtraSurveyQid')) {
+      if($this->_validateQuestionExtraSurvey(Yii::app()->getRequest()->getParam('questionExtraSurveyQid'),$iSurveyId)) {
+        $aSessionExtraSurvey[$iSurveyId]=Yii::app()->getRequest()->getPost('questionExtraSurveyQid');
+        Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
       }
     }
+    if(!isset($aSessionExtraSurvey[$iSurveyId])) {
+      /* Quit if we are not in survey inside surey system */
+      return;
+    }
+    unset($aSessionExtraSurvey[$iSurveyId]);
+    Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+    $script = "if(window.location != window.parent.location) {\n";
+    $script.= "  window.parent.$(window.parent.document).trigger('extrasurveyframe:autoclose');\n";
+    $script.= "}\n";
+    Yii::app()->getClientScript()->registerScript("questionExtraSurveyComplete",$script,CClientScript::POS_END);
+    if($currentSrid && Yii::getPathOfAlias('reloadAnyResponse')) {
+      \reloadAnyResponse\models\surveySession::model()->deleteByPk(array('sid'=>$iSurveyId,'srid'=>$currentSrid));
+    }
+    if($currentSrid && Yii::getPathOfAlias('renderMessage')) {
+      \renderMessage\messageHelper::renderAlert($this->_translate("Your responses was saved as complete, you can close this windows."));
+    }
+
   }
   /**
    * Recall good survey
@@ -453,6 +458,7 @@ class questionExtraSurvey extends PluginBase
       'language' => array(
         'Are you sure to remove this response.' => sprintf($this->_translate("Are you sure to remove this %s."),$reponseName),
       ),
+      'qid'=>$oEvent->get('qid'),
     );
 
     $listOfReponses="<div data-update-questionextrasurvey='$ajaxUrl' data-modalparams-questionextrasurvey='".ls_json_encode($modalParams)."'>{$listOfReponses}</div>";
@@ -875,6 +881,25 @@ class questionExtraSurvey extends PluginBase
     $reloadReponse->startSurvey($step);
   }
 
+  /**
+   * Validate a question have extra survey attribute to extra sis
+   * @param integer $qid
+   * @param integer $extraSid
+   * @return boolean
+   */
+  private function _validateQuestionExtraSurvey($qid,$extraSid) {
+    $title=Survey::model()->findByPk($extraSid)->getLocalizedTitle(); // @todo : get default lang title
+    /* search if it's a related survey */
+    $oAttributeExtraSurvey=QuestionAttribute::model()->find('attribute=:attribute AND qid=:qid',array(
+      ':attribute' => 'extraSurvey',
+      ':qid' => $qid,
+    ));
+    /* Validate if usage of extraSurvey is OK here with current qid */
+    if($oAttributeExtraSurvey && ($oAttributeExtraSurvey->value == $extraSid || $oAttributeExtraSurvey->value == $title)) {
+      return true;
+    }
+    return false;
+  }
   /*******************************************************
    * Common for a lot of plugin, helper for compatibility
    *******************************************************/

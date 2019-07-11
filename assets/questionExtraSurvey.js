@@ -1,6 +1,7 @@
 /**
  * @file questionExtraSurvey javascript system
  * @author Denis Chenu
+ * @version 1.0.1
  * @copyright Denis Chenu <http://www.sondages.pro>
  * @license magnet:?xt=urn:btih:1f739d935676111cfff4b4693e3816e664797050&dn=gpl-3.0.txt GPL-v3-or-Later
  */
@@ -21,6 +22,7 @@ $(document).on('click','[target="frame-questionExtraSurvey"]',function(event) {
   }
   $('#modal-questionExtraSurvey').find('.modal-title').text($(this).text());
   $("#modal-questionExtraSurvey iframe").html("").attr('src',$(this).attr('href'));
+  $("#modal-questionExtraSurvey").data("questionExtraSurveyQid",modalparams.qid);
   $("#modal-questionExtraSurvey").modal('show');
 });
 
@@ -40,10 +42,6 @@ $(document).on("hide.bs.modal",'#modal-questionExtraSurvey',function(e) {
     updateList($(this));
   });
   $("#modal-questionExtraSurvey iframe").html("").attr("src", "");
-});
-$(document).on("click","#modal-questionExtraSurvey button[data-action]",function(event) {
-  event.preventDefault();
-  $("#modal-questionExtraSurvey iframe").contents().find("button[name='"+$(this).data('action')+"']").click();
 });
 
 function updateList(element) {
@@ -97,10 +95,12 @@ $(document).on('extrasurveyframe:off',function(event,data) {
 $(document).on('extrasurveyframe:autoclose',function(event,data) {
   $("#modal-questionExtraSurvey").modal('hide');
 });
-$(document).on('click',"#modal-questionExtraSurvey button[data-action]:not('disabled')",function(e) {
+$(document).on('click',"#modal-questionExtraSurvey button[data-action]",function(e) {
   if($(this).data('action')=="delete") {
     return;
   }
+  var questionExtraSurveyQid = $("#modal-questionExtraSurvey").data("questionExtraSurveyQid");
+  $("#extra-survey-iframe").contents().find("form#limesurvey").append("<input type='hidden' name='questionExtraSurveyQid' value='"+questionExtraSurveyQid+"'>");
   $("#extra-survey-iframe").contents().find("form#limesurvey button:submit[value='"+$(this).data('action')+"']").last().click();
 });
 $(document).on('click',"#modal-questionExtraSurvey button[data-action='delete']:not('disabled')",function(e) {
