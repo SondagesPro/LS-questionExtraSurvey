@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.3.5
+ * @version 1.4.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -125,7 +125,7 @@ class questionExtraSurvey extends PluginBase
         'sortorder'=>80, /* Own category */
         'inputtype'=>'switch',
         'default'=>1,
-        'help'=>$this->_translate(''),
+        'help'=>'',
         'caption'=>$this->_translate('Fill answer with question id only if submitted.'),
       ),
       'extraSurveyShowId'=>array(
@@ -134,7 +134,7 @@ class questionExtraSurvey extends PluginBase
         'sortorder'=>90, /* Own category */
         'inputtype'=>'switch',
         'default'=>0,
-        'help'=>$this->_translate(''),
+        'help'=>'',
         'caption'=>$this->_translate('Show id at end of string.'),
       ),
       'extraSurveyNameInLanguage'=>array(
@@ -145,8 +145,19 @@ class questionExtraSurvey extends PluginBase
         'default'=>'',
         'i18n'=>true,
         'expression'=>1,
-        'help'=>$this->_translate('Default to response (translated)'),
+        'help'=>$this->_translate('Default to “response“ (translated)'),
         'caption'=>$this->_translate('Show response as'),
+      ),
+      'extraSurveyAddNewInLanguage'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>101, /* Own category */
+        'inputtype'=>'text',
+        'default'=>'',
+        'i18n'=>true,
+        'expression'=>1,
+        'help'=>$this->_translate('Default to “Add new response”, where response is the previous parameter (translated)'),
+        'caption'=>$this->_translate('Add new line text'),
       ),
     );
     if(method_exists($this->getEvent(),'append')) {
@@ -456,7 +467,7 @@ class questionExtraSurvey extends PluginBase
         'movesubmit' => true,
       ),
       'language' => array(
-        'Are you sure to remove this response.' => sprintf($this->_translate("Are you sure to remove this %s."),$reponseName),
+        'Are you sure to delete this response.' => sprintf($this->_translate("Are you sure to delete this %s."),$reponseName),
       ),
       'qid'=>$oEvent->get('qid'),
     );
@@ -475,7 +486,7 @@ class questionExtraSurvey extends PluginBase
     $renderData=array(
       'qid' => $qid,
       'language' => array(
-        'Are you sure to remove this response.' => sprintf($this->_translate("Are you sure to remove this %s."),strtolower(gT("Response"))),
+        'Are you sure to delete this response.' => sprintf($this->_translate("Are you sure to delete this %s."),strtolower(gT("Response"))),
         'Yes'=> gT("Yes"),
         'No'=> gT("No"),
         'Close'=>gT("Close"),
@@ -549,6 +560,8 @@ class questionExtraSurvey extends PluginBase
     $currentSusrveyId = $oQuestion->sid;
     $currentStep = isset($_SESSION['survey_'.$currentSusrveyId]) ? $_SESSION['survey_'.$currentSusrveyId]['step'] : null;
     $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
+    $reponseAddNew = empty($aAttributes['extraSurveyAddNewInLanguage'][Yii::app()->getLanguage()]) ? sprintf($this->_translate("Add a new %s"),strtolower($reponseName)) : $aAttributes['extraSurveyAddNewInLanguage'][Yii::app()->getLanguage()];
+
     $renderData=array(
       'aResponses'=>$aResponses,
       'surveyid'=>$surveyId,
@@ -558,7 +571,7 @@ class questionExtraSurvey extends PluginBase
       'inputName'=>$inputName,
       'setSubmittedSrid'=>$setSubmittedSrid,
       'language' => array(
-        'createNewreponse'=>sprintf($this->_translate("Add a new %s"),$reponseName),
+        'createNewreponse'=> $reponseAddNew
       ),
       'questionExtraSurveyReset'=>array(
         'surveyId'=> $currentSusrveyId,
@@ -924,11 +937,17 @@ class questionExtraSurvey extends PluginBase
 
   /**
    * get translation
-   * @param string
+   * @param string $string to translate
+   * @param string escape mode
+   * @param string language, current by default
    * @return string
    */
-  private function _translate($string){
-    return Yii::t('',$string,array(),'Messages'.get_class($this));
+    private function _translate($string, $sEscapeMode = 'unescaped', $sLanguage = null)
+    {
+        if(is_callable($this, 'gT')) {
+            return $this->gT($string,$sEscapeMode,$sLanguage);
+        }
+        return $string;
   }
 
   /**
@@ -936,17 +955,7 @@ class questionExtraSurvey extends PluginBase
    * @see event afterPluginLoad
    */
   public function afterPluginLoad(){
-    // messageSource for this plugin:
-    $messageSource=array(
-      'class' => 'CGettextMessageSource',
-      'cacheID' => get_class($this).'Lang',
-      'cachingDuration'=>3600,
-      'forceTranslation' => true,
-      'useMoFile' => true,
-      'basePath' => __DIR__ . DIRECTORY_SEPARATOR.'locale',
-      'catalog'=>'messages',// default from Yii
-    );
-    Yii::app()->setComponent('Messages'.get_class($this),$messageSource);
+
   }
 
   /**

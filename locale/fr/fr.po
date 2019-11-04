@@ -1,0 +1,149 @@
+# Translation of questionExtraSurvey in French (France)
+# This file is distributed under the same license as the questionExtraSurvey package.
+msgid ""
+msgstr ""
+"PO-Revision-Date: 2019-11-04 14:43:06+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: GlotPress/2.3.1\n"
+"Language: fr\n"
+"Project-Id-Version: questionExtraSurvey\n"
+
+#: questionExtraSurvey.php:727
+msgid "Invalid token to edit this %s."
+msgstr ""
+
+#: questionExtraSurvey.php:705
+msgid "Invalid id"
+msgstr ""
+
+#: questionExtraSurvey.php:563
+msgid "Add a new %s"
+msgstr "Ajouter une nouvelle %s"
+
+#: questionExtraSurvey.php:531
+msgid "Related Survey is not activate, related response deactivated."
+msgstr ""
+
+#: questionExtraSurvey.php:470 questionExtraSurvey.php:489
+msgid "Are you sure to delete this %s."
+msgstr "Êtes-vous sûr de vouloir supprimer cette "
+
+#: questionExtraSurvey.php:382
+msgid "Survey %s for question %s need to be not anonymized."
+msgstr ""
+
+#: questionExtraSurvey.php:379
+msgid "Survey %s for question %s can not be used with a survey without tokens."
+msgstr ""
+
+#: questionExtraSurvey.php:376
+msgid "Survey %s for question %s not activated."
+msgstr ""
+
+#: questionExtraSurvey.php:373
+msgid "Invalid survey %s for question %s."
+msgstr ""
+
+#: questionExtraSurvey.php:309
+msgid "Your responses was saved as complete, you can close this windows."
+msgstr ""
+
+#: questionExtraSurvey.php:275
+msgid "Your responses was saved with success, you can close this windows."
+msgstr "Vos réponses ont étaient sauvegardée, vous pouvez fermer cette fenêtre."
+
+#: questionExtraSurvey.php:246
+msgid "%s deleted, you can close this window."
+msgstr ""
+
+#: questionExtraSurvey.php:160
+msgid "Add new line text"
+msgstr ""
+
+#: questionExtraSurvey.php:159
+msgid "Default to “Add new response”, where response is the previous parameter (translated)"
+msgstr ""
+
+#: questionExtraSurvey.php:149
+msgid "Show response as"
+msgstr ""
+
+#: questionExtraSurvey.php:148
+msgid "Default to “response“ (translated)"
+msgstr ""
+
+#: questionExtraSurvey.php:138
+msgid "Show id at end of string."
+msgstr ""
+
+#: questionExtraSurvey.php:129
+msgid "Fill answer with question id only if submitted."
+msgstr ""
+
+#: questionExtraSurvey.php:120
+msgid "Allow delete response."
+msgstr ""
+
+#: questionExtraSurvey.php:119
+msgid "Add a button to delete inside modal box, this allow user to really delete the reponse."
+msgstr ""
+
+#: questionExtraSurvey.php:111
+msgid "Other question fields for relation."
+msgstr ""
+
+#: questionExtraSurvey.php:110
+msgid "One field by line, field must be a valid question code (single question only). Field and value are separated by colon (<code>:</code>), you can use Expressiona Manager in value."
+msgstr ""
+
+#: questionExtraSurvey.php:101
+msgid "Question code for listing."
+msgstr ""
+
+#: questionExtraSurvey.php:100
+msgid "This can be text question type, single choice question type or equation question type."
+msgstr ""
+
+#: questionExtraSurvey.php:92
+msgid "Use responseListAndManage group for token."
+msgstr ""
+
+#: questionExtraSurvey.php:91
+msgid "If you have responseListAndManage, the response list can be found using the group of current token."
+msgstr ""
+
+#: questionExtraSurvey.php:83
+msgid "Get only response related to current response id."
+msgstr ""
+
+#: questionExtraSurvey.php:82
+msgid "Choose if you want only related to current response. If survey use token persistence and allow edition, not needed and id can be different after import an old response database."
+msgstr ""
+
+#: questionExtraSurvey.php:74
+msgid "Question for response id"
+msgstr ""
+
+#: questionExtraSurvey.php:73
+msgid "The question code in the extra survey to be used. If empty : only token or optionnal fields was used for the link."
+msgstr ""
+
+#: questionExtraSurvey.php:65
+msgid "Survey to use"
+msgstr ""
+
+#: questionExtraSurvey.php:64
+msgid "If is integer : search the survey id, else search by name of survey (first activated one is choosen)"
+msgstr ""
+
+#: questionExtraSurvey.php:60 questionExtraSurvey.php:69
+#: questionExtraSurvey.php:78 questionExtraSurvey.php:87
+#: questionExtraSurvey.php:96 questionExtraSurvey.php:105
+#: questionExtraSurvey.php:115 questionExtraSurvey.php:124
+#: questionExtraSurvey.php:133 questionExtraSurvey.php:142
+#: questionExtraSurvey.php:153
+msgid "Extra survey"
+msgstr ""

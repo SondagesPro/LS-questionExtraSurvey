@@ -4,7 +4,7 @@
     <div class="modal-content panel panel-warning">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <div class="h4 modal-title" id="label-confirm-clearall"><?php echo $language['Are you sure to remove this response.']; ?></div>
+        <div class="h4 modal-title" id="label-confirm-clearall"><?php echo $language['Are you sure to delete this response.']; ?></div>
       </div>
       <div class="modal-body">
         <div class="btn-group btn-group-justified" role="group" aria-label="label-confirm-clearall">
