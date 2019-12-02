@@ -1,8 +1,9 @@
+#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: questionExtraSurvey\n"
-"POT-Creation-Date: 2019-11-04 15:39+0100\n"
-"PO-Revision-Date: 2019-11-04 15:39+0100\n"
+"POT-Creation-Date: 2019-12-02 12:13+0100\n"
+"PO-Revision-Date: 2019-12-02 12:13+0100\n"
 "Last-Translator: \n"
 "Language-Team: Denis Chenu\n"
 "Language: en\n"
@@ -21,8 +22,8 @@ msgstr ""
 #: questionExtraSurvey.php:78 questionExtraSurvey.php:87
 #: questionExtraSurvey.php:96 questionExtraSurvey.php:105
 #: questionExtraSurvey.php:115 questionExtraSurvey.php:124
-#: questionExtraSurvey.php:133 questionExtraSurvey.php:142
-#: questionExtraSurvey.php:153
+#: questionExtraSurvey.php:147 questionExtraSurvey.php:156
+#: questionExtraSurvey.php:165 questionExtraSurvey.php:176
 msgid "Extra survey"
 msgstr ""
 
@@ -102,80 +103,98 @@ msgstr ""
 msgid "Fill answer with question id only if submitted."
 msgstr ""
 
-#: questionExtraSurvey.php:138
+#: questionExtraSurvey.php:152
 msgid "Show id at end of string."
 msgstr ""
 
-#: questionExtraSurvey.php:148
+#: questionExtraSurvey.php:160
+#, php-format
+msgid ""
+"You can use %sSGQA identifier%s for the value to be orderd. For the order "
+"default is ASC, you can use DESC."
+msgstr ""
+
+#: questionExtraSurvey.php:161
+msgid "Order by (default “id DESC”, “datestamp ASC” for datestamped surveys)"
+msgstr ""
+
+#: questionExtraSurvey.php:171
 msgid "Default to “response“ (translated)"
 msgstr ""
 
-#: questionExtraSurvey.php:149
+#: questionExtraSurvey.php:172
 msgid "Show response as"
 msgstr ""
 
-#: questionExtraSurvey.php:159
+#: questionExtraSurvey.php:182
 msgid ""
 "Default to “Add new response”, where response is the previous parameter "
 "(translated)"
 msgstr ""
 
-#: questionExtraSurvey.php:160
+#: questionExtraSurvey.php:183
 msgid "Add new line text"
 msgstr ""
 
-#: questionExtraSurvey.php:246
+#: questionExtraSurvey.php:187
+#, php-format
+msgid ""
+"You can use %sexpression manager variables%s (question title for example) "
+"for the value to be orderd.For the order default is ASC, you can use DESC."
+msgstr ""
+
+#: questionExtraSurvey.php:272
 #, php-format
 msgid "%s deleted, you can close this window."
 msgstr ""
 
-#: questionExtraSurvey.php:275
+#: questionExtraSurvey.php:301
 msgid "Your responses was saved with success, you can close this windows."
 msgstr ""
 
-#: questionExtraSurvey.php:309
+#: questionExtraSurvey.php:335
 msgid "Your responses was saved as complete, you can close this windows."
 msgstr ""
 
-#: questionExtraSurvey.php:373
+#: questionExtraSurvey.php:399
 #, php-format
 msgid "Invalid survey %s for question %s."
 msgstr ""
 
-#: questionExtraSurvey.php:376
+#: questionExtraSurvey.php:402
 #, php-format
 msgid "Survey %s for question %s not activated."
 msgstr ""
 
-#: questionExtraSurvey.php:379
+#: questionExtraSurvey.php:405
 #, php-format
 msgid "Survey %s for question %s can not be used with a survey without tokens."
 msgstr ""
 
-#: questionExtraSurvey.php:382
+#: questionExtraSurvey.php:408
 #, php-format
 msgid "Survey %s for question %s need to be not anonymized."
 msgstr ""
 
-#: questionExtraSurvey.php:470 questionExtraSurvey.php:489
+#: questionExtraSurvey.php:496 questionExtraSurvey.php:515
 #, php-format
 msgid "Are you sure to delete this %s."
 msgstr ""
 
-#: questionExtraSurvey.php:531
+#: questionExtraSurvey.php:557
 msgid "Related Survey is not activate, related response deactivated."
 msgstr ""
 
-#: questionExtraSurvey.php:563
+#: questionExtraSurvey.php:590
 #, php-format
 msgid "Add a new %s"
 msgstr ""
 
-#: questionExtraSurvey.php:705
+#: questionExtraSurvey.php:767
 msgid "Invalid id"
 msgstr ""
 
-#: questionExtraSurvey.php:727
+#: questionExtraSurvey.php:789
 #, php-format
 msgid "Invalid token to edit this %s."
 msgstr ""
