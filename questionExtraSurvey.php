@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.4.1
+ * @version 1.5.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -128,6 +128,20 @@ class questionExtraSurvey extends PluginBase
         'help'=>'',
         'caption'=>$this->_translate('Fill answer with question id only if submitted.'),
       ),
+      //~ 'extraSurveyFillAnswer' => array(
+        //~ 'types'=>'T',
+        //~ 'category'=>$this->_translate('Extra survey'),
+        //~ 'sortorder'=>85, /* Own category */
+        //~ 'inputtype'=>'singleselect',
+        //~ 'options' = array(
+          //~ 'listall' => $this->_translate('List of all answers.'),
+          //~ 'listsubmitted' => $this->_translate('List of submitted answers.'),
+          //~ 'number' => $this->_translate('Number of submitted answers as integer part, number of not submitted answers as decimal part.'),
+        //~ ),
+        //~ 'default'=>'number',
+        //~ 'help'=>'',
+        //~ 'caption'=>$this->_translate('Way for filling the answer.'),
+      //~ ),
       'extraSurveyShowId'=>array(
         'types'=>'XT',
         'category'=>$this->_translate('Extra survey'),
@@ -136,6 +150,15 @@ class questionExtraSurvey extends PluginBase
         'default'=>0,
         'help'=>'',
         'caption'=>$this->_translate('Show id at end of string.'),
+      ),
+      'extraSurveyOrderBy'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>95, /* Own category */
+        'inputtype'=>'text',
+        'default'=>"",
+        'help'=>$this->_translate('You can use expression manager for the order, default is ASC, you can use DESC'),
+        'caption'=>$this->_translate('Order by (default is id ASC)'),
       ),
       'extraSurveyNameInLanguage'=>array(
         'types'=>'XT',
@@ -533,6 +556,7 @@ class questionExtraSurvey extends PluginBase
 
     $qCodeText=trim($aAttributes['extraSurveyQuestion']);
     $showId=trim($aAttributes['extraSurveyShowId']);
+    $orderBy = isset($aAttributes['extraSurveyOrderBy']) ? trim($aAttributes['extraSurveyOrderBy']) : null;
     $qCodeSrid = $qCodeSridUsed = trim($aAttributes['extraSurveyQuestionLink']);
     $setSubmittedSrid=trim($aAttributes['extraSurveySetSurveySubmittedOnly']);
     $relatedTokens = boolval($aAttributes['extraSurveyResponseListAndManage']);
@@ -541,6 +565,7 @@ class questionExtraSurvey extends PluginBase
       $qCodeSridUsed = null;
     }
     $aResponses=$this->_getPreviousResponse($surveyId,$srid,$token,$qCodeText,$showId,$qCodeSridUsed,$extraSurveyOtherField,$relatedTokens);
+    $aResponses=$this->_getPreviousResponse($surveyId,$srid,$token,$qid);
     $newUrlParam=array(
       'sid' =>$surveyId,
       'extrasurveyqid' => $qid,
@@ -587,19 +612,28 @@ class questionExtraSurvey extends PluginBase
    * @param int $surveyId
    * @param string $srid
    * @param null|string $token
-   * @param null|string $qCodeText question code to be used for link
-   * @param boolean $bShowId or not
-   * @param null|string $qCodeSrid
-   * @param null|string[] $aOtherFields
+   * @param null|integer $qid for attributes
    * @return void
    */
-  private function _getPreviousResponse($surveyId,$srid,$token = null,$qCodeText=null,$showId=false,$qCodeSrid=null,$aOtherFields = array(),$relatedTokens = true) {
+  private function _getPreviousResponse($surveyId,$srid,$token = null,$qid=null)
+  {
     $aSelect=array(
       'id',
       'submitdate'
     );
     if($token) {
       $aSelect[] = 'token';
+    }
+    $aAttributes=QuestionAttribute::model()->getQuestionAttributes($qid);
+    $qCodeText=isset($aAttributes['extraSurveyQuestion']) ? trim($aAttributes['extraSurveyQuestion']) : "";
+    $showId=trim($aAttributes['extraSurveyShowId']);
+    $orderBy = isset($aAttributes['extraSurveyOrderBy']) ? trim($aAttributes['extraSurveyOrderBy']) : null;
+    $qCodeSrid = trim($aAttributes['extraSurveyQuestionLink']);
+    $setSubmittedSrid=trim($aAttributes['extraSurveySetSurveySubmittedOnly']);
+    $relatedTokens = boolval($aAttributes['extraSurveyResponseListAndManage']);
+    $aOtherFields=$this->_getOtherField($qid);
+    if(!$aAttributes['extraSurveyQuestionLinkUse']) {
+      $qCodeSridUsed = null;
     }
     /* Find the question code */
     $oQuestionText=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$qCodeText));
@@ -639,9 +673,35 @@ class questionExtraSurvey extends PluginBase
         }
       }
     }
-    if(Survey::model()->findByPk($surveyId)->datestamp == "Y") {
-      $oCriteria->order = 'datestamp asc';
+    if(!empty($orderBy)) {
+      $aOrderBy = explode(" ",trim($orderBy));
+      $orderBy = null;
+      $arrangement = "ASC";
+      if(empty($aOrderBy[1]) or strtoupper($aOrderBy[1]) == 'DESC') {
+        $arrangement = "DESC";
+      }
+      if(!empty($aOrderBy[0])) {
+        $orderColumn = null;
+        $availableColumns = SurveyDynamic::model($surveyId)->getAttributes();
+        if (array_key_exists($aOrderBy[0], $availableColumns)) {
+            $orderBy = Yii::app()->db->quoteColumnName($aOrderBy[0])." ".$arrangement;
+        }
+        if(empty($orderBy) && Yii::getPathOfAlias('getQuestionInformation')) {
+          $aEmToColumns = \getQuestionInformation\helpers\surveyCodeHelper::getAllQuestions($surveyId);
+          if (in_array($aOrderBy[0], $aEmToColumns)) {
+            $aValidColumns = array_keys($aEmToColumns,$aOrderBy[0]);
+            $orderBy = Yii::app()->db->quoteColumnName($aValidColumns[0])." ".$arrangement;
+          }
+        }
+      }
     }
+    if(empty($orderBy)) {
+      $orderBy = Yii::app()->db->quoteColumnName('id')." DESC";
+      if(Survey::model()->findByPk($surveyId)->datestamp == "Y") {
+        $orderBy = Yii::app()->db->quoteColumnName('datestamp')." ASC";
+      }
+    }
+    $oCriteria->order = $orderBy;
 
     $oResponses=Response::model($surveyId)->findAll($oCriteria);
     $aResponses=array();
