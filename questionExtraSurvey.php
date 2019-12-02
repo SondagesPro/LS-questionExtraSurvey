@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.5.0
+ * @version 1.5.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -157,8 +157,8 @@ class questionExtraSurvey extends PluginBase
         'sortorder'=>95, /* Own category */
         'inputtype'=>'text',
         'default'=>"",
-        'help'=>$this->_translate('You can use expression manager for the order, default is ASC, you can use DESC'),
-        'caption'=>$this->_translate('Order by (default is id ASC)'),
+        'help'=>sprintf($this->_translate('You can use %sSGQA identifier%s for the value to be orderd. For the order default is ASC, you can use DESC.'),'<a href="https://manual.limesurvey.org/SGQA_identifier" target="_blank">','</a>'),
+        'caption'=>$this->_translate('Order by (default “id DESC”, “datestamp ASC” for datestamped surveys)'),
       ),
       'extraSurveyNameInLanguage'=>array(
         'types'=>'XT',
@@ -183,6 +183,9 @@ class questionExtraSurvey extends PluginBase
         'caption'=>$this->_translate('Add new line text'),
       ),
     );
+    if(Yii::getPathOfAlias('getQuestionInformation')) {
+      $extraAttributes['extraSurveyOrderBy']['help'] = sprintf($this->_translate('You can use %sexpression manager variables%s (question title for example) for the value to be orderd.For the order default is ASC, you can use DESC.'),'<a href="https://manual.limesurvey.org/Expression_Manager_-_presentation#Access_to_variables" target="_blank">','</a>');
+    }
     if(method_exists($this->getEvent(),'append')) {
       $this->getEvent()->append('questionAttributes', $extraAttributes);
     } else {
@@ -564,7 +567,6 @@ class questionExtraSurvey extends PluginBase
     if(!$aAttributes['extraSurveyQuestionLinkUse']) {
       $qCodeSridUsed = null;
     }
-    $aResponses=$this->_getPreviousResponse($surveyId,$srid,$token,$qCodeText,$showId,$qCodeSridUsed,$extraSurveyOtherField,$relatedTokens);
     $aResponses=$this->_getPreviousResponse($surveyId,$srid,$token,$qid);
     $newUrlParam=array(
       'sid' =>$surveyId,
