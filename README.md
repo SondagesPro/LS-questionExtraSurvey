@@ -40,5 +40,6 @@ This plugin need 2 surveys with token and not anonymous.
 - Code repository <https://gitlab.com/SondagesPro/QuestionSettingsType/questionExtraSurvey>
 - Copyright © 2017-2019 Denis Chenu <www.sondages.pro>
 - Copyright © 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
+- [![Donate](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/SondagesPro/) : [Donate on Liberapay](https://liberapay.com/SondagesPro/)
 
 Distributed under [GNU GENERAL PUBLIC LICENSE Version 3](https://gnu.org/licenses/gpl-3.0.txt) licence
