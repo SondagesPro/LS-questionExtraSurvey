@@ -157,7 +157,7 @@ class questionExtraSurvey extends PluginBase
         'sortorder'=>95, /* Own category */
         'inputtype'=>'text',
         'default'=>"",
-        'help'=>sprintf($this->_translate('You can use %sSGQA identifier%s for the value to be orderd. For the order default is ASC, you can use DESC.'),'<a href="https://manual.limesurvey.org/SGQA_identifier" target="_blank">','</a>'),
+        'help'=>sprintf($this->_translate('You can use %sSGQA identifier%s or question code iof you have getQuestionInformation plugin for the columns to be ordered. The default order is ASC, you can use DESC. You can use <code>,</code> for multiple order.'),'<a href="https://manual.limesurvey.org/SGQA_identifier" target="_blank">','</a>'),
         'caption'=>$this->_translate('Order by (default “id DESC”, “datestamp ASC” for datestamped surveys)'),
       ),
       'extraSurveyNameInLanguage'=>array(
@@ -675,35 +675,39 @@ class questionExtraSurvey extends PluginBase
         }
       }
     }
+    $sFinalOrderBy = "";
     if(!empty($orderBy)) {
-      $aOrderBy = explode(" ",trim($orderBy));
-      $orderBy = null;
-      $arrangement = "ASC";
-      if(empty($aOrderBy[1]) or strtoupper($aOrderBy[1]) == 'DESC') {
-        $arrangement = "DESC";
-      }
-      if(!empty($aOrderBy[0])) {
-        $orderColumn = null;
-        $availableColumns = SurveyDynamic::model($surveyId)->getAttributes();
-        if (array_key_exists($aOrderBy[0], $availableColumns)) {
-            $orderBy = Yii::app()->db->quoteColumnName($aOrderBy[0])." ".$arrangement;
+      $aOrdersBy = explode(",",$orderBy);
+      $aOrderByFinal = array();
+      foreach ($aOrdersBy as $sOrderBy) {
+        $aOrderBy = explode(" ",trim($sOrderBy));
+        $arrangement = "ASC";
+        if(!empty($aOrderBy[1]) and strtoupper($aOrderBy[1]) == 'DESC') {
+          $arrangement = "DESC";
         }
-        if(empty($orderBy) && Yii::getPathOfAlias('getQuestionInformation')) {
-          $aEmToColumns = \getQuestionInformation\helpers\surveyCodeHelper::getAllQuestions($surveyId);
-          if (in_array($aOrderBy[0], $aEmToColumns)) {
-            $aValidColumns = array_keys($aEmToColumns,$aOrderBy[0]);
-            $orderBy = Yii::app()->db->quoteColumnName($aValidColumns[0])." ".$arrangement;
+        if(!empty($aOrderBy[0])) {
+          $orderColumn = null;
+          $availableColumns = SurveyDynamic::model($surveyId)->getAttributes();
+          if (array_key_exists($aOrderBy[0], $availableColumns)) {
+              $aOrderByFinal[] = Yii::app()->db->quoteColumnName($aOrderBy[0])." ".$arrangement;
+          } elseif (Yii::getPathOfAlias('getQuestionInformation')) {
+            $aEmToColumns = \getQuestionInformation\helpers\surveyCodeHelper::getAllQuestions($surveyId);
+            if (in_array($aOrderBy[0], $aEmToColumns)) {
+              $aValidColumns = array_keys($aEmToColumns,$aOrderBy[0]);
+              $aOrderByFinal[] = Yii::app()->db->quoteColumnName($aValidColumns[0])." ".$arrangement;
+            }
           }
         }
       }
+      $sFinalOrderBy = implode(",",$aOrderByFinal);
     }
-    if(empty($orderBy)) {
-      $orderBy = Yii::app()->db->quoteColumnName('id')." DESC";
+    if(empty($sFinalOrderBy)) {
+      $sFinalOrderBy = Yii::app()->db->quoteColumnName('id')." DESC";
       if(Survey::model()->findByPk($surveyId)->datestamp == "Y") {
-        $orderBy = Yii::app()->db->quoteColumnName('datestamp')." ASC";
+        $sFinalOrderBy = Yii::app()->db->quoteColumnName('datestamp')." ASC";
       }
     }
-    $oCriteria->order = $orderBy;
+    $oCriteria->order = $sFinalOrderBy;
 
     $oResponses=Response::model($surveyId)->findAll($oCriteria);
     $aResponses=array();
