@@ -17,13 +17,22 @@ $(document).on('click','[target="frame-questionExtraSurvey"]',function(event) {
       $("#modal-questionExtraSurvey button[data-action='"+key+"']").addClass("hidden");
     }
   });
+  if(!modalparams.close) {
+    $("#modal-questionExtraSurvey button[data-dismiss").addClass("hidden");
+  } else {
+    $("#modal-questionExtraSurvey button[data-dismiss").removeClass("hidden");
+  }
   if(typeof modalparams.language['Are you sure to remove this response.'] === 'string' ) {
     $("#label-questionExtraSurvey-confirm-clearall").text(modalparams.language['Are you sure to remove this response.']);
   }
   $('#modal-questionExtraSurvey').find('.modal-title').text($(this).text());
   $("#modal-questionExtraSurvey iframe").html("").attr('src',$(this).attr('href'));
   $("#modal-questionExtraSurvey").data("questionExtraSurveyQid",modalparams.qid);
-  $("#modal-questionExtraSurvey").modal('show');
+  $("#modal-questionExtraSurvey").modal({
+    show: true,
+    keyboard : modalparams.close,
+    backdrop : (modalparams.close ? true : 'static')
+  });
 });
 
 $(document).on("shown.bs.modal","#modal-questionExtraSurvey",function(e) {

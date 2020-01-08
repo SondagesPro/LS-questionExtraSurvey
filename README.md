@@ -21,6 +21,8 @@ This plugin is tested with LimeSurvey 2.73, and 3.16.1
 
 ### Basic usage with token enables survey's
 
+**Only usage with token enable survey is allowed currently**
+
 1. Create the 1st survey and add a long text question
     - The plugin is done for survey with token, not anonymous, token-based response persistence and allow edit response activated.
 2. Create the second survey with
@@ -29,7 +31,7 @@ This plugin is tested with LimeSurvey 2.73, and 3.16.1
 3. Create and set the token to the 2 surveys with same token list. The second survey must be
     - **Not anonymous**
     - Token-based response **persistence not activated** or **Use left up to 1** (if you want to limit number of response by token)
-    - **Allow multiple responses** activated
+    - If **Allow multiple responses** is not activated : when reloading : survey is set to not submitted.
 4. Update the short text question settings with
     - Survey to use: the survey id of the second survey
     - Question for response id : the response code for identification (for example surveyLinkSrid)
@@ -46,9 +48,7 @@ You can use a [generateUniqId](https://gitlab.com/SondagesPro/QuestionSettingsTy
 1. Create you uniqId question in the first survey (title : uniqId here)
 2. Set _Other question fields for relation_ to surveyLinkSrid:{uniqId.NAOK}
 
-You can use any question, for example : you can use TOKEN attribute for group.
-
-If you don't add uniqId or use token : anybody can add new response using prefill value form url.
+You can use any question, for example : you can use TOKEN.
 
 ## Home page & Copyright
 - HomePage <https://extensions.sondages.pro/>

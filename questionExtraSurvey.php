@@ -6,7 +6,7 @@
  * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.5.1
+ * @version 1.6.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -118,6 +118,15 @@ class questionExtraSurvey extends PluginBase
         'default'=>0,
         'help'=>$this->_translate("Add a button to delete inside modal box, this allow user to really delete the reponse."),
         'caption'=>$this->_translate('Allow delete response.'),
+      ),
+      'extraSurveyDeleteUnsubmitted'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>75, /* Own category */
+        'inputtype'=>'switch',
+        'default'=>0,
+        'help'=>$this->_translate("If a survey is unsubmitted : disallow close of dialog before submitting."),
+        'caption'=>$this->_translate('Disallow close without submit.'),
       ),
       'extraSurveySetSurveySubmittedOnly'=>array(
         'types'=>'T',
@@ -323,7 +332,7 @@ class questionExtraSurvey extends PluginBase
       return;
     }
     unset($aSessionExtraSurvey[$iSurveyId]);
-    Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+    Yii::app()->session["questionExtraSurvey"] = $aSessionExtraSurvey;
     $script = "if(window.location != window.parent.location) {\n";
     $script.= "  window.parent.$(window.parent.document).trigger('extrasurveyframe:autoclose');\n";
     $script.= "}\n";
@@ -492,6 +501,7 @@ class questionExtraSurvey extends PluginBase
         'movenext' => ($oSurveyFrame->format != "A"),
         'movesubmit' => true,
       ),
+      'close' => !(bool)$aQuestionAttributes['extraSurveyDeleteUnsubmitted'],
       'language' => array(
         'Are you sure to delete this response.' => sprintf($this->_translate("Are you sure to delete this %s."),$reponseName),
       ),

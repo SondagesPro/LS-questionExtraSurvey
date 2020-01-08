@@ -9,6 +9,7 @@ foreach($aResponses as $id => $aResponse) {
   $name='<i class="fa fa-pencil-square" aria-hidden="true"></i> '.$name;
   $aLinkAttribute=array(
     'target'=>'frame-questionExtraSurvey',
+    'data-srid'=>$id,
   );
   $extraContent="";
   if(!empty($aResponse['submitdate'])) {
