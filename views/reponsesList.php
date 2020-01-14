@@ -1,4 +1,6 @@
-<ul class="list-group">
+<?php
+/** @version 2.0.1 **/
+?><ul class="list-group">
 <?php
 foreach($aResponses as $id => $aResponse) {
   $class='list-group-item';
@@ -35,12 +37,31 @@ foreach($aResponses as $id => $aResponse) {
 </ul>
 <?php if($inputName) {?>
   <?php
-  $value = implode(",",array_keys($aResponses));
-  if($setSubmittedSrid) {
-    $aValidResponse = array_filter($aResponses, function ($aResponse) {
-      return (!empty($aResponse['submitdate']));
-    });
-    $value = implode(",",array_keys($aValidResponse));
+  $value = "";
+  switch ($fillAnswerWith) {
+    case 'listsubmitted':
+      $aValidResponse = array_filter($aResponses, function ($aResponse) {
+        return (!empty($aResponse['submitdate']));
+      });
+      $value = implode(",",array_keys($aValidResponse));
+      break;
+    case 'listall':
+      $value = implode(",",array_keys($aResponses));
+      break;
+    case 'number':
+    default:
+      $value = count(array_filter($aResponses, function ($aResponse) {
+        return (!empty($aResponse['submitdate']));
+      }));
+      $notsubmitted = count($aResponses) - $value;
+      if($notsubmitted) {
+        $value = floatval($value.".".$notsubmitted);
+      }
+      if(!$value) {
+        // Move "0" to "" : mandatory system can still be used.
+        $value = "";
+      }
+      break;
   }
   echo \CHtml::tag("div",array(
     'class' => 'answer-item text-item hidden',

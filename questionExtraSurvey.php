@@ -3,10 +3,10 @@
  * questionExtraSurvey use a question to add survey inside survey
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2017-2019 Denis Chenu <www.sondages.pro>
+ * @copyright 2017-2020 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 1.6.0
+ * @version 2.0.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -128,29 +128,20 @@ class questionExtraSurvey extends PluginBase
         'help'=>$this->_translate("If a survey is unsubmitted : disallow close of dialog before submitting."),
         'caption'=>$this->_translate('Disallow close without submit.'),
       ),
-      'extraSurveySetSurveySubmittedOnly'=>array(
+      'extraSurveyFillAnswer' => array(
         'types'=>'T',
         'category'=>$this->_translate('Extra survey'),
-        'sortorder'=>80, /* Own category */
-        'inputtype'=>'switch',
-        'default'=>1,
-        'help'=>'',
-        'caption'=>$this->_translate('Fill answer with question id only if submitted.'),
+        'sortorder'=>85, /* Own category */
+        'inputtype'=>'singleselect',
+        'options' => array(
+          'listall' => $this->_translate('List of all answers.'),
+          'listsubmitted' => $this->_translate('List of submitted answers.'),
+          'number' => $this->_translate('Number of submitted and not submitted answers.'),
+        ),
+        'default'=>'number',
+        'help'=>$this->_translate('Recommended method is number : submlitted answer as set as integer part, and not submitted as decimal part (<code>submitted[.not-submitted]</code>).You can check if all answer are submitted with <code>intval(self)==self</code>.'),
+        'caption'=>$this->_translate('Way for filling the answer.'),
       ),
-      //~ 'extraSurveyFillAnswer' => array(
-        //~ 'types'=>'T',
-        //~ 'category'=>$this->_translate('Extra survey'),
-        //~ 'sortorder'=>85, /* Own category */
-        //~ 'inputtype'=>'singleselect',
-        //~ 'options' = array(
-          //~ 'listall' => $this->_translate('List of all answers.'),
-          //~ 'listsubmitted' => $this->_translate('List of submitted answers.'),
-          //~ 'number' => $this->_translate('Number of submitted answers as integer part, number of not submitted answers as decimal part.'),
-        //~ ),
-        //~ 'default'=>'number',
-        //~ 'help'=>'',
-        //~ 'caption'=>$this->_translate('Way for filling the answer.'),
-      //~ ),
       'extraSurveyShowId'=>array(
         'types'=>'XT',
         'category'=>$this->_translate('Extra survey'),
@@ -237,7 +228,7 @@ class questionExtraSurvey extends PluginBase
       }
     }
     if(!isset($aSessionExtraSurvey[$iSurveyId])) {
-      /* Quit if we are not in survey inside surey system */
+      /* Quit if we are not in survey inside survey system */
       return;
     }
     if(version_compare(Yii::app()->getConfig('versionnumber'),"3",">=")) {
@@ -571,7 +562,7 @@ class questionExtraSurvey extends PluginBase
     $showId=trim($aAttributes['extraSurveyShowId']);
     $orderBy = isset($aAttributes['extraSurveyOrderBy']) ? trim($aAttributes['extraSurveyOrderBy']) : null;
     $qCodeSrid = $qCodeSridUsed = trim($aAttributes['extraSurveyQuestionLink']);
-    $setSubmittedSrid=trim($aAttributes['extraSurveySetSurveySubmittedOnly']);
+    $extraSurveyFillAnswer=trim($aAttributes['extraSurveyFillAnswer']);
     $relatedTokens = boolval($aAttributes['extraSurveyResponseListAndManage']);
     $extraSurveyOtherField=$this->_getOtherField($qid);
     if(!$aAttributes['extraSurveyQuestionLinkUse']) {
@@ -606,7 +597,7 @@ class questionExtraSurvey extends PluginBase
       'token' => $token,
       'newUrl'=>Yii::app()->getController()->createUrl('survey/index',$newUrlParam),
       'inputName'=>$inputName,
-      'setSubmittedSrid'=>$setSubmittedSrid,
+      'fillAnswerWith'=>$extraSurveyFillAnswer,
       'language' => array(
         'createNewreponse'=> $reponseAddNew
       ),
