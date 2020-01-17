@@ -6,7 +6,7 @@
  * @copyright 2017-2020 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 2.0.2
+ * @version 2.1.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -182,6 +182,23 @@ class questionExtraSurvey extends PluginBase
         'help'=>$this->_translate('Default to “Add new response”, where response is the previous parameter (translated)'),
         'caption'=>$this->_translate('Add new line text'),
       ),
+      'extraSurveyAutoCloseSubmit'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>200, /* Own category */
+        'inputtype'=>'singleselect',
+        'options' => array(
+          'replace' => $this->_translate('Replace totally the content and close dialog box, this can disable other plugin system.'),
+          'addjs' => $this->_translate('Add information and close dialog box'),
+          'add' => $this->_translate('Add information'),
+          'js' => $this->_translate('Only close dialog box'),
+        ),
+        'default'=>'addjs',
+        'i18n'=>false,
+        'expression'=>0,
+        'help'=>$this->_translate('Using replace disable all other plugin event, dialog box are closed using javascript solution.'),
+        'caption'=>$this->_translate('Auto close when survey is submitted.'),
+      ),
     );
     if(Yii::getPathOfAlias('getQuestionInformation')) {
       $extraAttributes['extraSurveyOrderBy']['help'] = sprintf($this->_translate('You can use %sexpression manager variables%s (question title for example) for the value to be orderd.For the order default is ASC, you can use DESC.'),'<a href="https://manual.limesurvey.org/Expression_Manager_-_presentation#Access_to_variables" target="_blank">','</a>');
@@ -312,9 +329,11 @@ class questionExtraSurvey extends PluginBase
     $iSurveyId = $this->event->get('surveyId');
     $currentSrid = $this->event->get('responseId');
     $aSessionExtraSurvey=Yii::app()->session["questionExtraSurvey"];
+    $currentQid = null;
     if(Yii::app()->getRequest()->getPost('questionExtraSurveyQid')) {
       if($this->_validateQuestionExtraSurvey(Yii::app()->getRequest()->getParam('questionExtraSurveyQid'),$iSurveyId)) {
         $aSessionExtraSurvey[$iSurveyId]=Yii::app()->getRequest()->getPost('questionExtraSurveyQid');
+        $currentQid = Yii::app()->getRequest()->getPost('questionExtraSurveyQid');
         Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
       }
     }
@@ -322,19 +341,36 @@ class questionExtraSurvey extends PluginBase
       /* Quit if we are not in survey inside surey system */
       return;
     }
+    $extraSurveyAutoCloseSubmit = 'addjs';
+    if ($currentQid) {
+      $oQuestionAttribute = QuestionAttribute::model()->find(
+        "qid =:qid AND attribute = :attribute",
+        array (":qid"=>$currentQid,":attribute"=>'extraSurveyAutoCloseSubmit')
+      );
+      if($oQuestionAttribute && $oQuestionAttribute->value) {
+        $extraSurveyAutoCloseSubmit = $oQuestionAttribute->value;
+      }
+    }
+
     unset($aSessionExtraSurvey[$iSurveyId]);
     Yii::app()->session["questionExtraSurvey"] = $aSessionExtraSurvey;
-    $script = "if(window.location != window.parent.location) {\n";
-    $script.= "  window.parent.$(window.parent.document).trigger('extrasurveyframe:autoclose');\n";
-    $script.= "}\n";
-    Yii::app()->getClientScript()->registerScript("questionExtraSurveyComplete",$script,CClientScript::POS_END);
+    if(in_array($extraSurveyAutoCloseSubmit,array('replace','addjs','js'))) {
+      $script = "if(window.location != window.parent.location) {\n";
+      $script.= "  window.parent.$(window.parent.document).trigger('extrasurveyframe:autoclose');\n";
+      $script.= "}\n";
+      Yii::app()->getClientScript()->registerScript("questionExtraSurveyComplete",$script,CClientScript::POS_END);
+    }
     if($currentSrid && Yii::getPathOfAlias('reloadAnyResponse')) {
       \reloadAnyResponse\models\surveySession::model()->deleteByPk(array('sid'=>$iSurveyId,'srid'=>$currentSrid));
     }
-    if($currentSrid && Yii::getPathOfAlias('renderMessage')) {
+    if($currentSrid && $extraSurveyAutoCloseSubmit == 'replace' && Yii::getPathOfAlias('renderMessage')) {
       \renderMessage\messageHelper::renderAlert($this->_translate("Your responses was saved as complete, you can close this windows."));
+      return;
     }
-
+    if(in_array($extraSurveyAutoCloseSubmit,array('add','addjs'))) {
+      $this->getEvent()->getContent($this)
+          ->addContent("<p class='alert alert-success'>".$this->_translate("Your responses was saved as complete, you can close this windows.")."</p>");
+    }
   }
   /**
    * Recall good survey
