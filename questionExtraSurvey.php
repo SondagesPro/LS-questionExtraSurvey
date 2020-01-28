@@ -6,7 +6,7 @@
  * @copyright 2017-2020 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 2.1.0
+ * @version 2.1.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -443,9 +443,18 @@ class questionExtraSurvey extends PluginBase
       if(!$disableMessage && $this->_accessWithToken($thisSurvey) && $extraSurvey->anonymized == "Y") {
         $disableMessage = sprintf($this->_translate("Survey %s for question %s need to be not anonymized."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
-      if(!$disableMessage && $this->_accessWithToken($extraSurvey)) {
-        $this->_validateToken($extraSurvey,$thisSurvey,$token);
+      if(!$disableMessage && $this->_accessWithToken($thisSurvey) && $extraSurvey->anonymized == "Y") {
+        $disableMessage = sprintf($this->_translate("Survey %s for question %s need to be not anonymized."),$extraSurveyAttribute,$oEvent->get('qid'));
       }
+      if (!$disableMessage && $this->_accessWithToken($extraSurvey) && Yii::app()->getConfig('previewmode') && !Yii::app()->request->getQuery('token')) {
+        $disableMessage = sprintf($this->_translate("Survey %s for question %s can not be loaded in preview mode without a valid token."),$extraSurveyAttribute,$oEvent->get('qid'));
+      }
+      if(!$disableMessage && $this->_accessWithToken($extraSurvey)) {
+        if (!$this->_validateToken($extraSurvey,$thisSurvey,$token)) {
+          $disableMessage = sprintf($this->_translate("Survey %s for question %s token can not ne found or created."),$extraSurveyAttribute,$oEvent->get('qid'));
+        }
+      }
+
       if($disableMessage) {
         $oEvent->set("answers",CHtml::tag("div",array('class'=>'alert alert-warning'),$disableMessage));
         return;
@@ -833,17 +842,18 @@ class questionExtraSurvey extends PluginBase
    * Validate if same token exist, create if not.
    * @param Survey $extraSurvey
    * @param Survey $thisSurvey
+   * @return boolean (roken is valid)
    */
   private function _validateToken($extraSurvey,$thisSurvey,$basetoken=null) {
     if(!$this->_accessWithToken($extraSurvey)) {
-      return;
+      return false;
     }
     if(!$basetoken) {
       $basetoken = isset($_SESSION['survey_'.$thisSurvey->sid]['token']) ? $_SESSION['survey_'.$thisSurvey->sid]['token'] : null;
     }
     if(!$basetoken) {
       $this->log(sprintf("Unable to find token value for %s.",$thisSurvey->sid),'warning');
-      return;
+      return false;
     }
     /* Find if token exist in new survey */
     $oToken = Token::model($extraSurvey->sid)->find("token = :token",array(":token"=>$basetoken));
@@ -851,7 +861,7 @@ class questionExtraSurvey extends PluginBase
       $oBaseToken = Token::model($thisSurvey->sid)->find("token = :token",array(":token"=>$basetoken));
       if(empty($oBaseToken)) {
         $this->log(sprintf("Unable to create token for %s, token for %s seems invalid.",$extraSurvey->sid,$thisSurvey->sid),'error');
-        return;
+        return false;
       }
       $oToken = Token::create($extraSurvey->sid);
       $disableAttribute = array("tid","participant_id","emailstatus","blacklisted","sent","remindersent","remindercount","completed","usesleft");
@@ -862,10 +872,16 @@ class questionExtraSurvey extends PluginBase
         ARRAY_FILTER_USE_KEY
       );
       $oToken->setAttributes($updatableAttribute,false);
-      $oToken->save();
-      $this->log(sprintf("Auto create token %s for %s.",$basetoken,$extraSurvey->sid),'info');
-
+      if($oToken->save()) {
+        $this->log(sprintf("Auto create token %s for %s.",$basetoken,$extraSurvey->sid),'info');
+        return true;
+      } else {
+        $this->log(sprintf("Unable to create auto create token %s for %s.",$basetoken,$extraSurvey->sid),'error');
+        $this->log(CVarDumper::dumpAsString($oToken->getErrors),'info');
+        return false;
+      }
     }
+    return true;
   }
 
   /**
