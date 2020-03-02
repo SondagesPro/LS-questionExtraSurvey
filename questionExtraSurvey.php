@@ -6,7 +6,7 @@
  * @copyright 2017-2020 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 2.1.1
+ * @version 2.2.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -198,6 +198,17 @@ class questionExtraSurvey extends PluginBase
         'expression'=>0,
         'help'=>$this->_translate('Using replace disable all other plugin event, dialog box are closed using javascript solution.'),
         'caption'=>$this->_translate('Auto close when survey is submitted.'),
+      ),
+      'extraSurveyMaxresponse'=>array(
+        'types'=>'XT',
+        'category'=>$this->_translate('Extra survey'),
+        'sortorder'=>210, /* Own category */
+        'inputtype'=>'text',
+        'default'=>'',
+        'i18n'=>false,
+        'expression'=>1,
+        'help'=>$this->_translate('Show the add button until this value is reached. This do not disable adding response by other way.'),
+        'caption'=>$this->_translate('Maximum reponse.'),
       ),
     );
     if(Yii::getPathOfAlias('getQuestionInformation')) {
@@ -603,8 +614,12 @@ class questionExtraSurvey extends PluginBase
       return "<p class='alert alert-warning'>".sprintf($this->_translate("Related Survey is not activate, related response deactivated."),$surveyId)."</p>";
     }
 
-    $qCodeText=trim($aAttributes['extraSurveyQuestion']);
-    $showId=trim($aAttributes['extraSurveyShowId']);
+    $qCodeText = trim($aAttributes['extraSurveyQuestion']);
+    $showId = trim($aAttributes['extraSurveyShowId']);
+    $extraSurveyMaxresponse = trim($aAttributes['extraSurveyMaxresponse']);
+    if($extraSurveyMaxresponse) {
+      $extraSurveyMaxresponse = $this->_EMProcessString($extraSurveyMaxresponse,true);
+    }
     $orderBy = isset($aAttributes['extraSurveyOrderBy']) ? trim($aAttributes['extraSurveyOrderBy']) : null;
     $qCodeSrid = $qCodeSridUsed = trim($aAttributes['extraSurveyQuestionLink']);
     $extraSurveyFillAnswer=trim($aAttributes['extraSurveyFillAnswer']);
@@ -641,6 +656,7 @@ class questionExtraSurvey extends PluginBase
       'extrasurveyqid' => $qid,
       'token' => $token,
       'newUrl'=>Yii::app()->getController()->createUrl('survey/index',$newUrlParam),
+      'maxResponse' => $extraSurveyMaxresponse,
       'inputName'=>$inputName,
       'fillAnswerWith'=>$extraSurveyFillAnswer,
       'language' => array(

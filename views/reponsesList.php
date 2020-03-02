@@ -1,5 +1,5 @@
 <?php
-/** @version 2.0.1 **/
+/** @version 2.2.0 **/
 ?><ul class="list-group">
 <?php
 foreach($aResponses as $id => $aResponse) {
@@ -26,13 +26,15 @@ foreach($aResponses as $id => $aResponse) {
 }
 ?>
 <?php
-  $class='list-group-item ';
-  $aAttribute=array(
-    'class'=>$class,
-  );
-  $name='<i class="fa fa-plus-circle" aria-hidden="true"></i> '.$language['createNewreponse'];
-  $content=CHtml::link($name,$newUrl,array('target'=>'frame-questionExtraSurvey'));
-  echo CHtml::tag('li',$aAttribute,$content);
+  if(empty($maxResponse) || $maxResponse > count($aResponses)) {
+    $class='list-group-item ';
+    $aAttribute=array(
+      'class'=>$class,
+    );
+    $name='<i class="fa fa-plus-circle" aria-hidden="true"></i> '.$language['createNewreponse'];
+    $content=CHtml::link($name,$newUrl,array('target'=>'frame-questionExtraSurvey'));
+    echo CHtml::tag('li',$aAttribute,$content);
+  }
 ?>
 </ul>
 <?php if($inputName) {?>
