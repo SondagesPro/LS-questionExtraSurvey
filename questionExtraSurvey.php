@@ -6,7 +6,7 @@
  * @copyright 2017-2020 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 2.2.0
+ * @version 2.2.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -730,7 +730,7 @@ class questionExtraSurvey extends PluginBase
     if(!empty($aOtherFields)) {
       foreach($aOtherFields as $questionCode => $value) {
         $oQuestionOther=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$questionCode));
-        if($oQuestionOther && in_array($oQuestionOther->type,array("5","D","G","I","L","N","O","S","T","U","X","Y")) ) {
+        if($oQuestionOther && in_array($oQuestionOther->type,array("5","D","G","I","L","N","O","S","T","U","X","Y","!","*")) ) {
           $qCode = "{$oQuestionOther->sid}X{$oQuestionOther->gid}X{$oQuestionOther->qid}";
           $oCriteria->compare(Yii::app()->db->quoteColumnName($qCode),$value);
         }
