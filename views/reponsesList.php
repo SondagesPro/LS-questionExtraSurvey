@@ -1,5 +1,5 @@
 <?php
-/** @version 2.2.0 **/
+/** @version 2.2.2 **/
 ?><ul class="list-group">
 <?php
 foreach($aResponses as $id => $aResponse) {
@@ -21,7 +21,7 @@ foreach($aResponses as $id => $aResponse) {
     //~ $aLinkAttribute['class']='text-warning';
     $extraContent='<i class="fa fa-square-o text-danger pull-right" aria-hidden="true"></i>';
   }
-  $content=$extraContent.CHtml::link($name,array("survey/index",'sid'=>$surveyid,'extrasurveyqid'=>$extrasurveyqid,'token'=>$token,'extrasurveysrid'=>$id,'newtest'=>'Y'),$aLinkAttribute);
+  $content=$extraContent.CHtml::link($name,array("survey/index",'sid'=>$surveyid,'extrasurveyqid'=>$extrasurveyqid,'token'=>$token,'extrasurveysrid'=>$id,'newtest'=>'Y','lang'=>Yii::app()->getLanguage()),$aLinkAttribute);
   echo CHtml::tag('li',$aAttribute,$content);
 }
 ?>

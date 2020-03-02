@@ -554,7 +554,6 @@ class questionExtraSurvey extends PluginBase
       ),
       'qid'=>$oEvent->get('qid'),
     );
-
     $listOfReponses="<div data-update-questionextrasurvey='$ajaxUrl' data-modalparams-questionextrasurvey='".ls_json_encode($modalParams)."'>{$listOfReponses}</div>";
     $oEvent->set("answers",$listOfReponses);
     $this->_addModal($oEvent->get('qid'),$aQuestionAttributes);
@@ -635,6 +634,7 @@ class questionExtraSurvey extends PluginBase
       'newtest' =>'Y',
       'token' => $token,
       'extrasurveysrid' => 'new',
+      'lang' => Yii::app()->getLanguage()
     );
     if(!empty($qCodeSrid)) {
       $newUrlParam[$qCodeSrid]=$srid;
