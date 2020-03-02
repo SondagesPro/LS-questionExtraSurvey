@@ -6,7 +6,7 @@
  * @copyright 2017-2020 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 2.2.1
+ * @version 2.2.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -296,7 +296,7 @@ class questionExtraSurvey extends PluginBase
         $aAttributes=QuestionAttribute::model()->getQuestionAttributes($aSessionExtraSurvey[$iSurveyId]);
         unset($aSessionExtraSurvey[$iSurveyId]);
         Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
-        $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
+        $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? mb_strtolower(gT("Response"), 'UTF-8') : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
         $renderMessage->render(sprintf($this->_translate("%s deleted, you can close this window."),$reponseName));
       }
     }
@@ -539,7 +539,7 @@ class questionExtraSurvey extends PluginBase
       'lang'=>Yii::app()->getLanguage(),
     ));
     $oSurveyFrame = Survey::model()->findByPk($surveyId);
-    $reponseName = empty($aQuestionAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aQuestionAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
+    $reponseName = empty($aQuestionAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? mb_strtolower(gT("Response"), 'UTF-8') : $aQuestionAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
     $modalParams = array(
       'buttons' => array(
         'delete' => (bool)$aQuestionAttributes['extraSurveyQuestionAllowDelete'],
@@ -568,7 +568,7 @@ class questionExtraSurvey extends PluginBase
     $renderData=array(
       'qid' => $qid,
       'language' => array(
-        'Are you sure to delete this response.' => sprintf($this->_translate("Are you sure to delete this %s."),strtolower(gT("Response"))),
+        'Are you sure to delete this response.' => sprintf($this->_translate("Are you sure to delete this %s."),mb_strtolower(gT("Response"), 'UTF-8')),
         'Yes'=> gT("Yes"),
         'No'=> gT("No"),
         'Close'=>gT("Close"),
@@ -647,8 +647,8 @@ class questionExtraSurvey extends PluginBase
     /* Need some information on current Srid */
     $currentSusrveyId = $oQuestion->sid;
     $currentStep = isset($_SESSION['survey_'.$currentSusrveyId]) ? $_SESSION['survey_'.$currentSusrveyId]['step'] : null;
-    $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
-    $reponseAddNew = empty($aAttributes['extraSurveyAddNewInLanguage'][Yii::app()->getLanguage()]) ? sprintf($this->_translate("Add a new %s"),strtolower($reponseName)) : $aAttributes['extraSurveyAddNewInLanguage'][Yii::app()->getLanguage()];
+    $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? mb_strtolower(gT("Response"), 'UTF-8') : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
+    $reponseAddNew = empty($aAttributes['extraSurveyAddNewInLanguage'][Yii::app()->getLanguage()]) ? sprintf($this->_translate("Add a new %s"),mb_strtolower($reponseName, 'UTF-8')) : $aAttributes['extraSurveyAddNewInLanguage'][Yii::app()->getLanguage()];
 
     $renderData=array(
       'aResponses'=>$aResponses,
@@ -845,11 +845,11 @@ class questionExtraSurvey extends PluginBase
       $oResponse->save();
       return $oResponse;
     }
-    $reponseName = strtolower(gT("Response"));
+    $reponseName = mb_strtolower(gT("Response"), 'UTF-8');
     $aSessionExtraSurvey = Yii::app()->session["questionExtraSurvey"];
     if(isset($aSessionExtraSurvey[$surveyid])) {
       $aAttributes=QuestionAttribute::model()->getQuestionAttributes($aSessionExtraSurvey[$surveyid]);
-      $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? strtolower(gT("Response")) : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
+      $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? mb_strtolower(gT("Response"), 'UTF-8') : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
     }
     throw new CHttpException(403,sprintf($this->_translate("Invalid token to edit this %s."),$responseName));
   }
