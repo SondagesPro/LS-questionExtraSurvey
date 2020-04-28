@@ -1,13 +1,17 @@
 /**
  * @file questionExtraSurvey javascript system
  * @author Denis Chenu
- * @version 1.0.1
+ * @version 1.1.0
  * @copyright Denis Chenu <http://www.sondages.pro>
  * @license magnet:?xt=urn:btih:1f739d935676111cfff4b4693e3816e664797050&dn=gpl-3.0.txt GPL-v3-or-Later
  */
 $(document).on('click','[target="frame-questionExtraSurvey"]',function(event) {
   event.preventDefault();
-  var modalbuttons = { "delete":false,"saveall":false,"moveprevious":false,"movenext":true,"movesubmit":true };
+  if(!$(this).closest("[data-modalparams-questionextrasurvey]").length) {
+    return;
+  }
+  // Set the buttons
+  var modalbuttons = { "delete":false,"saveall":false,"moveprevious":false,"movenext":true,"movesubmit":true,"close":true };
   var modalparams = $(this).closest("[data-modalparams-questionextrasurvey]").data('modalparams-questionextrasurvey');
   $.extend(modalbuttons, modalparams.buttons);
   $.each(modalbuttons,function( key, value ) {
@@ -17,7 +21,7 @@ $(document).on('click','[target="frame-questionExtraSurvey"]',function(event) {
       $("#modal-questionExtraSurvey button[data-action='"+key+"']").addClass("hidden");
     }
   });
-  if(!modalparams.close) {
+  if(!modalbuttons.close) {
     $("#modal-questionExtraSurvey button[data-dismiss").addClass("hidden");
   } else {
     $("#modal-questionExtraSurvey button[data-dismiss").removeClass("hidden");
@@ -25,13 +29,20 @@ $(document).on('click','[target="frame-questionExtraSurvey"]',function(event) {
   if(typeof modalparams.language['Are you sure to remove this response.'] === 'string' ) {
     $("#label-questionExtraSurvey-confirm-clearall").text(modalparams.language['Are you sure to remove this response.']);
   }
+  // Set the data for close event
+  $("#modal-questionExtraSurvey").data("checkwhenclose-questionextrasurvey",false);
+  if($(this).closest("[data-closecheck-questionextrasurvey]").length) {
+    var checkUrl = $(this).closest("[data-closecheck-questionextrasurvey]").data('closecheck-questionextrasurvey');
+    $("#modal-questionExtraSurvey").data("checkwhenclose-questionextrasurvey",checkUrl);
+  }
+  // OK, open it
   $('#modal-questionExtraSurvey').find('.modal-title').text($(this).text());
   $("#modal-questionExtraSurvey iframe").html("").attr('src',$(this).attr('href'));
   $("#modal-questionExtraSurvey").data("questionExtraSurveyQid",modalparams.qid);
   $("#modal-questionExtraSurvey").modal({
     show: true,
-    keyboard : modalparams.close,
-    backdrop : (modalparams.close ? true : 'static')
+    keyboard : modalbuttons.close,
+    backdrop : (modalbuttons.close ? true : 'static')
   });
 });
 
@@ -47,16 +58,42 @@ $(document).on("hide.bs.modal",function(e) {
   }
 });
 $(document).on("hide.bs.modal",'#modal-questionExtraSurvey',function(e) {
-  $("[data-update-questionextrasurvey]").each(function(){
-    updateList($(this));
-  });
+  var sridElement = $("#modal-questionExtraSurvey iframe").contents().find("#sridQuestionExtraSurvey");
+  if($(sridElement).length == 1) {
+      var srid = $(sridElement).val().trim();
+      var defer = $.Deferred();
+      checkIsEmpty($("#modal-questionExtraSurvey"),srid);
+  } else {
+    updateLists();
+  }
   $("#modal-questionExtraSurvey iframe").html("").attr("src", "");
 });
 
-function updateList(element) {
-  if($(element).data('update-questionextrasurvey')) {
+function checkIsEmpty(element, srid) {
+  if($(element).data('checkwhenclose-questionextrasurvey')) {
+    $.when($.ajax({
+        url: $(element).data('checkwhenclose-questionextrasurvey'),
+        data: {
+          'srid' : srid
+        },
+        type: "GET", // Todo : set to POST (add CRSF)
+        dataType: "text",
+        success: function (data) {
+          //
+        },
+        error: function (xhr, status) {
+            //TODO
+        }
+    })).done(function( ) {
+      updateLists();
+    });
+  }
+}
+function updateLists() {
+  $("[data-update-questionextrasurvey]").each(function(){
+    var element = $(this);
     $.ajax({
-        url: $(element).data('update-questionextrasurvey'),
+        url: $(this).data('update-questionextrasurvey'),
         data: { },
         type: "GET",
         dataType: "html",
@@ -67,7 +104,7 @@ function updateList(element) {
             //TODO
         }
     });
-  }
+  });
 }
 
 function updateHeightModalExtraSurvey(modal) {

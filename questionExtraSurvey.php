@@ -6,7 +6,7 @@
  * @copyright 2017-2020 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 2.2.3
+ * @version 2.3.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -102,6 +102,15 @@ class questionExtraSurvey extends PluginBase
                 'help'=>$this->translate('This can be text question type, single choice question type or equation question type.'),
                 'caption'=>$this->translate('Question code for listing.'),
             ),
+            'extraSurveyAutoDelete'=>array(
+                'types'=>'XT',
+                'category'=>$this->translate('Extra survey'),
+                'sortorder'=>35, /* Own category */
+                'inputtype'=>'switch',
+                'default'=>1,
+                'help'=>$this->translate('When dialog box is closed, the new survey was checked, if title is empty : survey was deleted. This doesn\'t guarantee you never have empty title, just less.'),
+                'caption'=>$this->translate('Delete survey without title when close.'),
+            ),
             'extraSurveyOtherField'=>array(
                 'types'=>'XT',
                 'category'=>$this->translate('Extra survey'),
@@ -150,7 +159,7 @@ class questionExtraSurvey extends PluginBase
                 'sortorder'=>90, /* Own category */
                 'inputtype'=>'switch',
                 'default'=>0,
-                'help'=>'',
+                'help'=>$this->translate('This shown survey without title too.'),
                 'caption'=>$this->translate('Show id at end of string.'),
             ),
             'extraSurveyOrderBy'=>array(
@@ -239,7 +248,8 @@ class questionExtraSurvey extends PluginBase
         if (empty($surveyId)) {
             return;
         }
-        if (empty($this->qid)) {
+        $aSessionExtraSurvey = Yii::app()->session["questionExtraSurvey"];
+        if (!isset($aSessionExtraSurvey[$surveyId])) {
             return;
         }
         $currentSrid = isset($_SESSION['survey_'.$surveyId]['srid']) ? $_SESSION['survey_'.$surveyId]['srid'] : null;
@@ -266,7 +276,7 @@ class questionExtraSurvey extends PluginBase
         if (!$oSurvey) {
             return;
         }
-        $aSessionExtraSurvey=Yii::app()->session["questionExtraSurvey"];
+        $aSessionExtraSurvey = Yii::app()->session["questionExtraSurvey"];
         if (empty($aSessionExtraSurvey)) {
             $aSessionExtraSurvey=array();
         }
@@ -283,8 +293,8 @@ class questionExtraSurvey extends PluginBase
         }
         if (Yii::app()->getRequest()->getPost('questionExtraSurveyQid')) {
             if ($this->validateQuestionExtraSurvey(Yii::app()->getRequest()->getParam('questionExtraSurveyQid'), $iSurveyId)) {
-                $aSessionExtraSurvey[$iSurveyId]=Yii::app()->getRequest()->getPost('questionExtraSurveyQid');
-                Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+                $aSessionExtraSurvey[$iSurveyId] = Yii::app()->getRequest()->getPost('questionExtraSurveyQid');
+                Yii::app()->session["questionExtraSurvey"] = $aSessionExtraSurvey;
             }
         }
         if (!isset($aSessionExtraSurvey[$iSurveyId])) {
@@ -327,7 +337,7 @@ class questionExtraSurvey extends PluginBase
                 App()->getClientScript()->registerScript("questionExtraSurveyComplete", "autoclose();\n", CClientScript::POS_END);
                 $aAttributes=QuestionAttribute::model()->getQuestionAttributes($aSessionExtraSurvey[$iSurveyId]);
                 unset($aSessionExtraSurvey[$iSurveyId]);
-                Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+                Yii::app()->session["questionExtraSurvey"] = $aSessionExtraSurvey;
                 $reponseName = mb_strtolower(gT("Response"), 'UTF-8');
                 if(!empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()])) {
                     $reponseName = $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
@@ -340,6 +350,7 @@ class questionExtraSurvey extends PluginBase
             if (isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid) {
                 $oSurvey = Survey::model()->findByPk($iSurveyId);
                 //~ App()->getClientScript()->registerScript("questionExtraSurveySaved","autoclose();\n",CClientScript::POS_END);
+                $hiddenElement = "";
                 if ($oSurvey->active == "Y") {
                     $script = "if(window.location != window.parent.location) {\n";
                     $script = "    window.parent.$(window.parent.document).trigger('extrasurveyframe:autoclose');\n";
@@ -351,6 +362,14 @@ class questionExtraSurvey extends PluginBase
                     // Save must force always to not submitted (draft)
                     $oResponse->submitdate = null;
                     $oResponse->save();
+                    $hiddenElement = Chtml::hiddenField(
+                        'sridQuestionExtraSurvey',
+                        $oResponse->id,
+                        array(
+                            'disable' => true,
+                            'id' => 'sridQuestionExtraSurvey'
+                        )
+                    );
                 }
                 $this->qesRegisterExtraSurveyScript();
                 App()->getClientScript()->registerScript("questionExtraSurveyComplete", "autoclose();\n", CClientScript::POS_END);
@@ -361,7 +380,7 @@ class questionExtraSurvey extends PluginBase
                     \reloadAnyResponse\models\surveySession::model()->deleteByPk(array('sid'=>$iSurveyId,'srid'=>$currentSrid));
                 }
                 if (Yii::getPathOfAlias('renderMessage')) {
-                    \renderMessage\messageHelper::renderAlert($this->translate("Your responses was saved with success, you can close this windows."));
+                    \renderMessage\messageHelper::renderAlert($this->translate("Your responses was saved with success, you can close this windows.").$hiddenElement);
                 }
             }
         }
@@ -459,7 +478,7 @@ class questionExtraSurvey extends PluginBase
         if (isset($aQuestionAttributes['extraSurvey']) && trim($aQuestionAttributes['extraSurvey'])) {
             $token = Yii::app()->getRequest()->getParam('token');
             if (empty($token)) {
-                $token = !empty(Yii::app()->session['survey_$surveyId']['token']) ? Yii::app()->session['survey_$surveyId']['token'] : null;
+                $token = !empty(Yii::app()->session["survey_$surveyId"]['token']) ? Yii::app()->session["survey_$surveyId"]['token'] : null;
             }
             $thisSurvey=Survey::model()->findByPk($surveyId);
             $extraSurveyAttribute=trim($aQuestionAttributes['extraSurvey']);
@@ -516,11 +535,11 @@ class questionExtraSurvey extends PluginBase
         if ($oEvent->get('target') != get_class()) {
             return;
         }
-        $surveyId=$this->api->getRequest()->getParam('surveyid');
-        $token=$this->api->getRequest()->getParam('token');
-        $srid=$this->api->getRequest()->getParam('extrasurveysrid');
-        $qid=$this->api->getRequest()->getParam('qid');
-        $lang=$this->api->getRequest()->getParam('lang');
+        $surveyId = $this->api->getRequest()->getParam('surveyid');
+        $token = $this->api->getRequest()->getParam('token');
+        $srid = $this->api->getRequest()->getParam('extrasurveysrid');
+        $qid = $this->api->getRequest()->getParam('qid');
+        $lang = $this->api->getRequest()->getParam('lang');
         if (!$surveyId || !$srid || !$qid) {
             return;
         }
@@ -537,12 +556,122 @@ class questionExtraSurvey extends PluginBase
                     echo $this->getHtmlPreviousResponse($surveyId, $srid, $qid, $token, $lang, true);
                     break;
                 }
+                break;
+            case 'check':
+                $title=Survey::model()->findByPk($surveyId)->getLocalizedTitle();
+                /* search if it's a related survey */
+                $oAttributeExtraSurvey=QuestionAttribute::model()->find('attribute=:attribute AND qid=:qid', array(
+                    ':attribute' => 'extraSurvey',
+                    ':qid' => $qid,
+                ));
+                $sridToCheck =  $this->api->getRequest()->getParam('srid');
+                if ($oAttributeExtraSurvey && ($oAttributeExtraSurvey->value == $surveyId || $oAttributeExtraSurvey->value == $title)) {
+                    echo $this->checkIfTitleIsEmpty($qid, $surveyId, $sridToCheck);
+                    break;
+                }
+                 break;
             // no break
             default:
+                throw new CHttpException(400, "Invalid function $sAction");
             // Nothing to do (except log error)
         }
     }
 
+    /**
+     * Check if the final title is empty, delete if true (accordinng to setting)
+     * @param integer $qid questio id source
+     * @param $sridToCheck : the srid of extra survey
+     * @return echo an integer number of deleted srid (0 or 1)
+     */
+    private function checkIfTitleIsEmpty($qid, $extraSurveyId, $sridToCheck)
+    {
+        $oQuestion = Question::model()->find("qid = :qid",array(":qid" => $qid));
+        if(empty($oQuestion)) {
+            return;
+        }
+        if(!$this->validateQuestionExtraSurvey($qid, $extraSurveyId)) {
+            return;
+        }
+        $thisSurveyId = $oQuestion->sid;
+        $aAttributes = QuestionAttribute::model()->getQuestionAttributes($qid);
+        if(empty($aAttributes['extraSurveyQuestion'])) {
+            return;
+        }
+        if(empty($aAttributes['extraSurveyAutoDelete'])) {
+            return;
+        }
+        $qCodeText = trim($aAttributes['extraSurveyQuestion']);
+        if(empty($qCodeText)) {
+            return;
+        }
+
+        /* validate 2 survey … TODO ! move to a new function */
+        $thisSurvey = Survey::model()->findByPk($extraSurveyId);
+        $extraSurvey = Survey::model()->findByPk($extraSurveyId);
+        if (!$extraSurvey) {
+            return;
+        }
+        if ($extraSurvey->active != "Y") {
+            return;
+        }
+        if (!$this->surveyAccessWithToken($thisSurvey) && $this->surveyAccessWithToken($extraSurvey)) {
+            return;
+        }
+        if ($this->surveyAccessWithToken($thisSurvey) && $extraSurvey->anonymized == "Y") {
+            return;
+        }
+        if ($this->surveyAccessWithToken($extraSurvey) && Yii::app()->getConfig('previewmode') && !Yii::app()->request->getQuery('token')) {
+            return;
+        }
+        /* Validate what we need */
+        $token = isset($_SESSION["survey_$thisSurveyId"]['token']) ? $_SESSION["survey_$thisSurveyId"]['token'] : null;
+        $srid = isset($_SESSION["survey_$thisSurveyId"]['srid']) ? $_SESSION["survey_$thisSurveyId"]['srid'] : null;
+        /* Search and delete */
+        $qCodeSrid = trim($aAttributes['extraSurveyQuestionLink']);
+        $relatedTokens = boolval($aAttributes['extraSurveyResponseListAndManage']);
+        $aOtherFields = $this->getOtherField($qid);
+        if (!$aAttributes['extraSurveyQuestionLinkUse']) {
+            $qCodeSrid = null;
+        }
+        /* Find the question code */
+        $oQuestionText = Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$extraSurveyId,":title"=>$qCodeText));
+        $qCodeText = null;
+        if ($oQuestionText && in_array($oQuestionText->type, array("S","T","U","L","!","O","N","D","G","Y","*"))) {
+            $qCodeText = "{$oQuestionText->sid}X{$oQuestionText->gid}X{$oQuestionText->qid}";
+            $aSelect[] = Yii::app()->db->quoteColumnName($qCodeText);
+        }
+        if(empty($qCodeText)) {
+            return;
+        }
+        $oCriteria = new CDbCriteria;
+        $qQuotesCodeText = Yii::app()->db->quoteColumnName($qCodeText);
+        $oCriteria->condition = "$qQuotesCodeText IS NULL OR $qQuotesCodeText = ''";
+        if ($token) {
+            $tokens = array($token=>$token);
+            if ($relatedTokens) {
+                $tokens = $this->getTokensList($extraSurveyId, $token);
+            }
+            $oCriteria->addInCondition("token", $tokens);
+        }
+        if ($qCodeSrid && $srid) {
+            $oQuestionSrid=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$extraSurveyId,":title"=>$qCodeSrid));
+            if ($oQuestionSrid && in_array($oQuestionSrid->type, array("T","S","N"))) {
+                $qCodeSrid = "{$oQuestionSrid->sid}X{$oQuestionSrid->gid}X{$oQuestionSrid->qid}";
+                $oCriteria->compare(Yii::app()->db->quoteColumnName($qCodeSrid), $srid);
+            }
+        }
+        if (!empty($aOtherFields)) {
+            foreach ($aOtherFields as $questionCode => $value) {
+                $oQuestionOther=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$extraSurveyId,":title"=>$questionCode));
+                if ($oQuestionOther && in_array($oQuestionOther->type, array("5","D","G","I","L","N","O","S","T","U","X","Y","!","*"))) {
+                    $qCode = "{$oQuestionOther->sid}X{$oQuestionOther->gid}X{$oQuestionOther->qid}";
+                    $oCriteria->compare(Yii::app()->db->quoteColumnName($qCode), $value);
+                }
+            }
+        }
+        $oCriteria->compare(Yii::app()->db->quoteColumnName("id"), $sridToCheck);
+        echo Response::model($extraSurveyId)->deleteAll($oCriteria);
+    }
     /**
      * Set the answwer and other parameters for the system
      * @param int $surveyId for answers
@@ -580,6 +709,17 @@ class questionExtraSurvey extends PluginBase
                 'lang'=>Yii::app()->getLanguage(),
             )
         );
+        $ajaxCheckUrl = Yii::app()->getController()->createUrl(
+            'plugins/direct', array(
+                'plugin' => 'questionExtraSurvey',
+                'function' => 'check',
+                'surveyid' => $surveyId,
+                'token '=> $token,
+                'extrasurveysrid' => $srid,
+                'qid'=>$oEvent->get('qid'),
+                'lang'=>Yii::app()->getLanguage(),
+            )
+        );
         $oSurveyFrame = Survey::model()->findByPk($surveyId);
         $reponseName = empty($aQuestionAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? mb_strtolower(gT("Response"), 'UTF-8') : $aQuestionAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
         $modalParams = array(
@@ -596,7 +736,15 @@ class questionExtraSurvey extends PluginBase
             ),
             'qid'=>$oEvent->get('qid'),
         );
-        $listOfReponses="<div data-update-questionextrasurvey='$ajaxUrl' data-modalparams-questionextrasurvey='".ls_json_encode($modalParams)."'>{$listOfReponses}</div>";
+        $listOfReponses = CHtml::tag(
+            "div",
+            array(
+                'data-update-questionextrasurvey' => $ajaxUrl,
+                'data-closecheck-questionextrasurvey' => $ajaxCheckUrl,
+                'data-modalparams-questionextrasurvey' => ls_json_encode($modalParams)
+            ),
+            $listOfReponses
+        );
         $oEvent->set("answers", $listOfReponses);
         $this->qesAddModal($oEvent->get('qid'), $aQuestionAttributes);
     }
@@ -610,15 +758,15 @@ class questionExtraSurvey extends PluginBase
         $renderData=array(
             'qid' => $qid,
             'language' => array(
-            'Are you sure to delete this response.' => sprintf($this->translate("Are you sure to delete this %s."), mb_strtolower(gT("Response"), 'UTF-8')),
-            'Yes'=> gT("Yes"),
-            'No'=> gT("No"),
-            'Close'=>gT("Close"),
-            'Delete'=> gT("Delete"),
-            'Save'=>gT("Save"),
-            'Previous'=>gT("Previous"),
-            'Next'=>gT("Next"),
-            'Submit'=>gT("Submit"),
+                'Are you sure to delete this response.' => sprintf($this->translate("Are you sure to delete this %s."), mb_strtolower(gT("Response"), 'UTF-8')),
+                'Yes'=> gT("Yes"),
+                'No'=> gT("No"),
+                'Close'=>gT("Close"),
+                'Delete'=> gT("Delete"),
+                'Save'=>gT("Save"),
+                'Previous'=>gT("Previous"),
+                'Next'=>gT("Next"),
+                'Submit'=>gT("Submit"),
             ),
         );
         $posReady = CClientScript::POS_READY;
@@ -715,15 +863,18 @@ class questionExtraSurvey extends PluginBase
     }
 
     /**
-     * Set the answwer and other parameters for the system
+     * Set the answer and other parameters for the system
      * @param int $surveyId
      * @param string $srid
      * @param null|string $token
      * @param null|integer $qid for attributes
-     * @return void
+     * @return array[]
      */
     private function getPreviousResponse($surveyId, $srid, $token = null, $qid = null)
     {
+        if(!$qid) {
+            return array();
+        }
         $aSelect=array(
             'id',
             'submitdate'
@@ -731,15 +882,15 @@ class questionExtraSurvey extends PluginBase
         if ($token) {
             $aSelect[] = 'token';
         }
-        $aAttributes=QuestionAttribute::model()->getQuestionAttributes($qid);
+        $aAttributes = QuestionAttribute::model()->getQuestionAttributes($qid);
         $qCodeText=isset($aAttributes['extraSurveyQuestion']) ? trim($aAttributes['extraSurveyQuestion']) : "";
-        $showId=trim($aAttributes['extraSurveyShowId']);
+        $showId =trim($aAttributes['extraSurveyShowId']);
         $orderBy = isset($aAttributes['extraSurveyOrderBy']) ? trim($aAttributes['extraSurveyOrderBy']) : null;
         $qCodeSrid = trim($aAttributes['extraSurveyQuestionLink']);
         $relatedTokens = boolval($aAttributes['extraSurveyResponseListAndManage']);
-        $aOtherFields=$this->getOtherField($qid);
+        $aOtherFields = $this->getOtherField($qid);
         if (!$aAttributes['extraSurveyQuestionLinkUse']) {
-            $qCodeSridUsed = null;
+            $qCodeSrid = null;
         }
         /* Find the question code */
         $oQuestionText=Question::model()->find("sid=:sid and title=:title and parent_qid=0", array(":sid"=>$surveyId,":title"=>$qCodeText));
@@ -752,7 +903,7 @@ class questionExtraSurvey extends PluginBase
         $oCriteria = new CDbCriteria;
         $oCriteria->select = $aSelect;
         $oCriteria->condition = "";
-        if ($qCodeText) {
+        if ($qCodeText && !$showId) {
             $qQuotesCodeText = Yii::app()->db->quoteColumnName($qCodeText);
             $oCriteria->addCondition("$qQuotesCodeText IS NOT NULL AND $qQuotesCodeText != ''");
         }
