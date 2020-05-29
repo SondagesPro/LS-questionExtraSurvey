@@ -6,7 +6,7 @@
  * @copyright 2017-2020 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 3.0.0
+ * @version 3.0.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -90,7 +90,7 @@ class questionExtraSurvey extends PluginBase
                 'help'=>$this->translate('Choose if you want only related to current response. If survey use token persistence and allow edition, not needed and id can be different after import an old response database.'),
                 'caption'=>$this->translate('Get only response related to current response id.'),
             ),
-            'extraSurveySurveyTokenUsage'=>array(
+            'extraSurveyTokenUsage'=>array(
                 'types'=>'XT',
                 'category'=>$this->translate('Extra survey'),
                 'sortorder'=>28, /* Own category */
@@ -467,7 +467,7 @@ class questionExtraSurvey extends PluginBase
             return;
         }
         if (Yii::app()->getRequest()->getParam('extrasurveysrid')) {
-            $oResponse=$this->getResponse($iSurveyId, Yii::app()->getRequest()->getParam('extrasurveysrid'));
+            $oResponse=$this->getResponse($iSurveyId, Yii::app()->getRequest()->getParam('extrasurveysrid'), $this->qid);
             if ($oResponse->submitdate) {
                 if (Survey::model()->findByPk($iSurveyId)->alloweditaftercompletion != "Y") {
                     $oResponse->submitdate=null;
@@ -643,7 +643,7 @@ class questionExtraSurvey extends PluginBase
         /* Search and delete */
         $qCodeSrid = trim($aAttributes['extraSurveyQuestionLink']);
 
-        $relatedTokens = $aAttributes['extraSurveySurveyTokenUsage'] == 'group';
+        $relatedTokens = $aAttributes['extraSurveyTokenUsage'] == 'group';
         $aOtherFields = $this->getOtherField($qid);
         if (!$aAttributes['extraSurveyQuestionLinkUse']) {
             $qCodeSrid = null;
@@ -828,7 +828,7 @@ class questionExtraSurvey extends PluginBase
         $orderBy = isset($aAttributes['extraSurveyOrderBy']) ? trim($aAttributes['extraSurveyOrderBy']) : null;
         $qCodeSrid = $qCodeSridUsed = trim($aAttributes['extraSurveyQuestionLink']);
         $extraSurveyFillAnswer=trim($aAttributes['extraSurveyFillAnswer']);
-        $relatedTokens = $aAttributes['extraSurveySurveyTokenUsage'] == 'group';
+        $relatedTokens = $aAttributes['extraSurveyTokenUsage'] == 'group';
         $extraSurveyOtherField=$this->getOtherField($qid);
         if (!$aAttributes['extraSurveyQuestionLinkUse']) {
             $qCodeSridUsed = null;
@@ -902,7 +902,7 @@ class questionExtraSurvey extends PluginBase
         $showId =trim($aAttributes['extraSurveyShowId']);
         $orderBy = isset($aAttributes['extraSurveyOrderBy']) ? trim($aAttributes['extraSurveyOrderBy']) : null;
         $qCodeSrid = trim($aAttributes['extraSurveyQuestionLink']);
-        $relatedTokens = $aAttributes['extraSurveySurveyTokenUsage'] == 'group';
+        $relatedTokens = $aAttributes['extraSurveyTokenUsage'] == 'group';
         $aOtherFields = $this->getOtherField($qid);
         if (!$aAttributes['extraSurveyQuestionLinkUse']) {
             $qCodeSrid = null;
@@ -1033,25 +1033,32 @@ class questionExtraSurvey extends PluginBase
      * Get Response, control access
      * @param integer survey id
      * @param integer response id
+     * @param integer qid
      * @throw CHttpException
      * @return void|Response
     */
-    private function getResponse($surveyid, $srid)
+    private function getResponse($surveyid, $srid, $qid )
     {
+        /* Validate attribute */
+        $aAttributes = QuestionAttribute::model()->getQuestionAttributes($qid);
+        if($aAttributes['extraSurvey'] != $surveyid) {
+            throw new CHttpException(400);
+        }
         $oResponse  = Response::model($surveyid)->findByPk($srid);
         if (!$oResponse) {
             throw new CHttpException(404, $this->translate("Invalid id"));
         }
         if (empty($oResponse->token)) {
+            /* Must check that … */
             return $oResponse;
         }
         /* Must control token validity */
-        $token=Yii::app()->getRequest()->getParam('token');
+        $token = Yii::app()->getRequest()->getParam('token');
         $aTokens = $this->getTokensList($surveyid, $token);
         if ($oResponse->token == $token) {
             return $oResponse;
         }
-        if (in_array($oResponse->token, $aTokens)) {
+        if ($aAttributes['extraSurveyTokenUsage'] == 'group' && in_array($oResponse->token, $aTokens)) {
             $oResponse->token=$token;
             $oResponse->save();
             return $oResponse;
@@ -1059,7 +1066,7 @@ class questionExtraSurvey extends PluginBase
         $reponseName = mb_strtolower(gT("Response"), 'UTF-8');
         $aSessionExtraSurvey = Yii::app()->session["questionExtraSurvey"];
         if (isset($aSessionExtraSurvey[$surveyid])) {
-            $aAttributes=QuestionAttribute::model()->getQuestionAttributes($aSessionExtraSurvey[$surveyid]);
+            $aAttributes = QuestionAttribute::model()->getQuestionAttributes($aSessionExtraSurvey[$surveyid]);
             $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? mb_strtolower(gT("Response"), 'UTF-8') : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
         }
         throw new CHttpException(403, sprintf($this->translate("Invalid token to edit this %s."), $reponseName));
@@ -1331,13 +1338,13 @@ class questionExtraSurvey extends PluginBase
                         "qid = :qid AND attribute = :attribute",
                         array(
                             ":qid" => $oQuestionExtraSurvey->qid,
-                            ":attribute"=>"extraSurveySurveyTokenUsage",
+                            ":attribute"=>"extraSurveyTokenUsage",
                         )
                     );
                     if(empty($oAttributeResponseTokenUsage)) {
                         $oAttributeResponseTokenUsage = new QuestionAttribute;
                         $oAttributeResponseTokenUsage->qid = $oQuestionExtraSurvey->qid;
-                        $oAttributeResponseTokenUsage->attribute = 'extraSurveySurveyTokenUsage';
+                        $oAttributeResponseTokenUsage->attribute = 'extraSurveyTokenUsage';
                         $oAttributeResponseTokenUsage->value = 'group';
                         $oAttributeResponseTokenUsage->save();
                     }
