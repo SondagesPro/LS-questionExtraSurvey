@@ -6,7 +6,7 @@
  * @copyright 2017-2020 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 2.3.0
+ * @version 3.0.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -30,6 +30,11 @@ class questionExtraSurvey extends PluginBase
      * actual qid for this survey
      */
     private $qid;
+
+    /**
+     * @var integer the DB version needed
+     */
+    private static $DBversion = 1;
 
     /**
     * Add function to be used in beforeQuestionRender event and to attriubute
@@ -56,6 +61,7 @@ class questionExtraSurvey extends PluginBase
      */
     public function addExtraSurveyAttribute()
     {
+        $this->fixDbByVersion();
         $extraAttributes = array(
             'extraSurvey'=> array(
                 'types'=>'XT',
@@ -84,14 +90,19 @@ class questionExtraSurvey extends PluginBase
                 'help'=>$this->translate('Choose if you want only related to current response. If survey use token persistence and allow edition, not needed and id can be different after import an old response database.'),
                 'caption'=>$this->translate('Get only response related to current response id.'),
             ),
-            'extraSurveyResponseListAndManage'=>array(
+            'extraSurveySurveyTokenUsage'=>array(
                 'types'=>'XT',
                 'category'=>$this->translate('Extra survey'),
                 'sortorder'=>28, /* Own category */
-                'inputtype'=>'switch',
-                'default'=>1,
+                'inputtype'=>'singleselect',
+                'options'=>array(
+                    //~ //'no'=>gT('No'),
+                    'token'=>gT('Yes'),
+                    'group'=>gT('Token Group (with responseListAndManage plugin)')
+                ),
+                'default'=>'token',
                 'help'=>$this->translate('If you have responseListAndManage, the response list can be found using the group of current token.'),
-                'caption'=>$this->translate('Use responseListAndManage group for token.'),
+                'caption'=>$this->translate('Usage of token.'),
             ),
             'extraSurveyQuestion'=>array(
                 'types'=>'XT',
@@ -271,6 +282,7 @@ class questionExtraSurvey extends PluginBase
      */
     public function beforeSurveyPage()
     {
+        $this->fixDbByVersion();
         $iSurveyId=$this->event->get('surveyId');
         $oSurvey = Survey::model()->findByPk($iSurveyId);
         if (!$oSurvey) {
@@ -289,6 +301,8 @@ class questionExtraSurvey extends PluginBase
                 $this->qid = Yii::app()->getRequest()->getParam('extrasurveyqid');
                 $aSessionExtraSurvey[$iSurveyId]=Yii::app()->getRequest()->getParam('extrasurveyqid');
                 Yii::app()->session["questionExtraSurvey"]=$aSessionExtraSurvey;
+            } else {
+                throw new CHttpException(400, "Invalid $iSurveyId");
             }
         }
         if (Yii::app()->getRequest()->getPost('questionExtraSurveyQid')) {
@@ -628,7 +642,8 @@ class questionExtraSurvey extends PluginBase
         $srid = isset($_SESSION["survey_$thisSurveyId"]['srid']) ? $_SESSION["survey_$thisSurveyId"]['srid'] : null;
         /* Search and delete */
         $qCodeSrid = trim($aAttributes['extraSurveyQuestionLink']);
-        $relatedTokens = boolval($aAttributes['extraSurveyResponseListAndManage']);
+
+        $relatedTokens = $aAttributes['extraSurveySurveyTokenUsage'] == 'group';
         $aOtherFields = $this->getOtherField($qid);
         if (!$aAttributes['extraSurveyQuestionLinkUse']) {
             $qCodeSrid = null;
@@ -813,7 +828,7 @@ class questionExtraSurvey extends PluginBase
         $orderBy = isset($aAttributes['extraSurveyOrderBy']) ? trim($aAttributes['extraSurveyOrderBy']) : null;
         $qCodeSrid = $qCodeSridUsed = trim($aAttributes['extraSurveyQuestionLink']);
         $extraSurveyFillAnswer=trim($aAttributes['extraSurveyFillAnswer']);
-        $relatedTokens = boolval($aAttributes['extraSurveyResponseListAndManage']);
+        $relatedTokens = $aAttributes['extraSurveySurveyTokenUsage'] == 'group';
         $extraSurveyOtherField=$this->getOtherField($qid);
         if (!$aAttributes['extraSurveyQuestionLinkUse']) {
             $qCodeSridUsed = null;
@@ -887,7 +902,7 @@ class questionExtraSurvey extends PluginBase
         $showId =trim($aAttributes['extraSurveyShowId']);
         $orderBy = isset($aAttributes['extraSurveyOrderBy']) ? trim($aAttributes['extraSurveyOrderBy']) : null;
         $qCodeSrid = trim($aAttributes['extraSurveyQuestionLink']);
-        $relatedTokens = boolval($aAttributes['extraSurveyResponseListAndManage']);
+        $relatedTokens = $aAttributes['extraSurveySurveyTokenUsage'] == 'group';
         $aOtherFields = $this->getOtherField($qid);
         if (!$aAttributes['extraSurveyQuestionLinkUse']) {
             $qCodeSrid = null;
@@ -1285,11 +1300,51 @@ class questionExtraSurvey extends PluginBase
     }
 
     /**
-     * Add this translation just after loaded all plugins
-     * @see event afterPluginLoad
+     * allow to fix some DB value when update
+     * - 0 to 1 : remove extraSurveyResponseListAndManage usage to extraSurveyTokenUsage : if null, set it to 'group'
+     * @return void
+     * @throw Exception
      */
-    public function afterPluginLoad()
+    private function fixDbByVersion()
     {
+        $currentDbVersion = $this->get("dbVersion",null,null,0);
+        if($currentDbVersion >= self::$DBversion) {
+            return;
+        }
+        if($currentDbVersion < 1) {
+            /* Get all qid with extraSurvey set */
+            $oQuestionsAttributeExtraSurvey = QuestionAttribute::model()->findAll("attribute = :attribute", array(":attribute" => "extraSurvey"));
+            foreach ($oQuestionsAttributeExtraSurvey as $oQuestionExtraSurvey) {
+                $oAttributeResponseListAndManage = QuestionAttribute::model()->find(
+                    "qid = :qid AND attribute = :attribute",
+                    array(
+                        ":qid" => $oQuestionExtraSurvey->qid,
+                        ":attribute"=>"extraSurveyResponseListAndManage",
+                    )
+                );
+                if (!empty($oAttributeResponseListAndManage)) {
+                    $oAttributeResponseListAndManage->delete();
+                }
+                if (empty($oAttributeResponseListAndManage)) {
+                    $oAttributeResponseTokenUsage = QuestionAttribute::model()->find(
+                        "qid = :qid AND attribute = :attribute",
+                        array(
+                            ":qid" => $oQuestionExtraSurvey->qid,
+                            ":attribute"=>"extraSurveySurveyTokenUsage",
+                        )
+                    );
+                    if(empty($oAttributeResponseTokenUsage)) {
+                        $oAttributeResponseTokenUsage = new QuestionAttribute;
+                        $oAttributeResponseTokenUsage->qid = $oQuestionExtraSurvey->qid;
+                        $oAttributeResponseTokenUsage->attribute = 'extraSurveySurveyTokenUsage';
+                        $oAttributeResponseTokenUsage->value = 'group';
+                        $oAttributeResponseTokenUsage->save();
+                    }
+                }
+            }
+            $this->set("dbVersion",1);
+        }
+        $this->set("dbVersion",self::$DBversion);
     }
 
     /**
