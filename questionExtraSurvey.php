@@ -1033,6 +1033,7 @@ class questionExtraSurvey extends PluginBase
      * Get Response, control access
      * @param integer survey id
      * @param integer response id
+     * @throw CHttpException
      * @return void|Response
     */
     private function getResponse($surveyid, $srid)
@@ -1061,7 +1062,7 @@ class questionExtraSurvey extends PluginBase
             $aAttributes=QuestionAttribute::model()->getQuestionAttributes($aSessionExtraSurvey[$surveyid]);
             $reponseName = empty($aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()]) ? mb_strtolower(gT("Response"), 'UTF-8') : $aAttributes['extraSurveyNameInLanguage'][Yii::app()->getLanguage()];
         }
-        throw new CHttpException(403, sprintf($this->translate("Invalid token to edit this %s."), $responseName));
+        throw new CHttpException(403, sprintf($this->translate("Invalid token to edit this %s."), $reponseName));
     }
 
     /**
