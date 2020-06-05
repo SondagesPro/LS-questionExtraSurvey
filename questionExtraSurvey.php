@@ -6,7 +6,7 @@
  * @copyright 2017-2020 Denis Chenu <www.sondages.pro>
  * @copyright 2017 OECD (Organisation for Economic Co-operation and Development ) <www.oecd.org>
  * @license AGPL v3
- * @version 3.0.1
+ * @version 3.0.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -321,6 +321,7 @@ class questionExtraSurvey extends PluginBase
         $this->resetEMIfNeeded($iSurveyId);
 
         $currentSrid = isset($_SESSION['survey_'.$iSurveyId]['srid']) ? $_SESSION['survey_'.$iSurveyId]['srid'] : null;
+
         if ((Yii::app()->getRequest()->getParam('move')=='delete')) {
             if (isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid) {
                 $qid = $aSessionExtraSurvey[$iSurveyId];
@@ -359,7 +360,6 @@ class questionExtraSurvey extends PluginBase
                 $renderMessage->render(sprintf($this->translate("%s deleted, you can close this window."), $reponseName));
             }
         }
-
         if ((Yii::app()->getRequest()->getParam('move')=='saveall' || Yii::app()->getRequest()->getParam('saveall'))) {
             if (isset($aSessionExtraSurvey[$iSurveyId]) && $currentSrid) {
                 $oSurvey = Survey::model()->findByPk($iSurveyId);
@@ -461,9 +461,10 @@ class questionExtraSurvey extends PluginBase
         if (!$this->qid) {
             return;
         }
-        $iSurveyId=$this->getEvent()->get('surveyId');
+        $beforeLoadResponseEvent = $this->getEvent();
+        $iSurveyId=$beforeLoadResponseEvent->get('surveyId');
         if (Yii::app()->getRequest()->getParam('extrasurveysrid')=='new') {
-            $this->getEvent()->set('response', false);
+            $beforeLoadResponseEvent->set('response', false);
             return;
         }
         if (Yii::app()->getRequest()->getParam('extrasurveysrid')) {
@@ -475,7 +476,8 @@ class questionExtraSurvey extends PluginBase
                 $oResponse->lastpage=0;
                 $oResponse->save();
             }
-            $this->getEvent()->set('response', $oResponse);
+            $beforeLoadResponseEvent->set('response', $oResponse);
+            tracevar($beforeLoadResponseEvent->get('response'));
             return;
         }
     }
