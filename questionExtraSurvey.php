@@ -477,7 +477,6 @@ class questionExtraSurvey extends PluginBase
                 $oResponse->save();
             }
             $beforeLoadResponseEvent->set('response', $oResponse);
-            tracevar($beforeLoadResponseEvent->get('response'));
             return;
         }
     }
